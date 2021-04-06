@@ -100,7 +100,6 @@ test(
   'unittest_jsontestrunner',
   python,
   args : [
-    '-B',
     join_paths(meson.current_source_dir(), 'test/runjsontests.py'),
     jsontestrunner,
     join_paths(meson.current_source_dir(), 'test/data')],
@@ -110,7 +109,6 @@ test(
   python,
   is_parallel : false,
   args : [
-    '-B',
     join_paths(meson.current_source_dir(), 'test/runjsontests.py'),
     '--with-json-checker',
     jsontestrunner,
