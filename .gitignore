@@ -1,5 +1,7 @@
 /build/
 /build-*/
+/builddir/
+/.vscode/
 *.pyc
 *.swp
 *.actual
