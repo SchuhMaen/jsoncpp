@@ -12,7 +12,7 @@ project(
   version : '1.9.4',
   default_options : [
     'buildtype=release',
-    'cpp_std=c++11',
+    'cpp_std=c++17',
     'warning_level=1'],
   license : 'Public Domain',
   meson_version : '>= 0.49.0')
