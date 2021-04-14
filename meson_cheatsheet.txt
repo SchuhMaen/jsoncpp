@@ -1,0 +1,13 @@
+#setup meson
+meson setup [builddir]
+#set options
+meson configure [builddir] [option]
+#compile
+cd [buiddir]
+meson compile
+#or
+meson compile -C [builddir]
+#show set options
+meson introspect [builddir] (-i) --buildoptions
+#install
+meson install -C [builddir]

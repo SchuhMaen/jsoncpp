@@ -1,0 +1,3 @@
+--buildtype=debug
+--default-library-both
+--prefix="C:\msys64\mingw64" #lib install root
