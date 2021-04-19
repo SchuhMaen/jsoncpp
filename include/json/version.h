@@ -25,4 +25,11 @@
 // If non-zero, the library zeroes any memory that it has allocated before
 // it frees its memory.
 
+// override define via cli
+#ifdef JSONCPP_USING_SECURE_MEMORY_OVERRIDE
+#undef JSONCPP_USING_SECURE_MEMORY
+#define JSONCPP_USING_SECURE_MEMORY JSONCPP_USING_SECURE_MEMORY_OVERRIDE
+#endif
+
+
 #endif // JSON_VERSION_H_INCLUDED

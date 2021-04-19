@@ -17,6 +17,7 @@ project(
   license : 'Public Domain',
   meson_version : '>= 0.49.0')
 
+add_global_arguments(['-LX:/dev/bachelor/code/jsoncpp/benchmark/build/src'], language : 'cpp')
 
 jsoncpp_headers = files([
   'include/json/allocator.h',
@@ -44,6 +45,12 @@ else
   dll_import_flag = []
 endif
 
+if meson.get_compiler('cpp').has_argument('-fno-builtin-memset')
+  keep_memset_flag = ['-fno-builtin-memset']
+else
+  keep_memset_flag = []
+endif
+
 jsoncpp_lib = library(
   'jsoncpp', files([
     'src/lib_json/json_reader.cpp',
@@ -53,7 +60,22 @@ jsoncpp_lib = library(
   soversion : 24,
   install : true,
   include_directories : jsoncpp_include_directories,
-  cpp_args: dll_export_flag)
+  cpp_args: dll_export_flag + keep_memset_flag
+)
+
+jsoncpp_lib_secure = library(
+  'jsoncpp_secure', files([
+    'src/lib_json/json_reader.cpp',
+    'src/lib_json/json_value.cpp',
+    'src/lib_json/json_writer.cpp',
+  ]),
+  soversion : 24,
+  install : true,
+  include_directories : jsoncpp_include_directories,
+  cpp_args: dll_export_flag + keep_memset_flag + [
+    '-DJSONCPP_USING_SECURE_MEMORY_OVERRIDE=1'
+  ]
+)
 
 import('pkgconfig').generate(
   libraries : jsoncpp_lib,
@@ -115,3 +137,54 @@ test(
     join_paths(meson.current_source_dir(), 'test/data')],
     workdir : join_paths(meson.current_source_dir(), 'test/data'),
   )
+
+benchmark_dep = [
+  meson.get_compiler('cpp').find_library('benchmark'),
+  dependency('threads'),
+  meson.get_compiler('cpp').find_library('shlwapi')
+  ]
+
+g_benchmark_secure = executable(
+  'google_benchmark_secure', files([
+    'src/google_benchmark/main.cpp'
+  ]),
+  include_directories : jsoncpp_include_directories,
+  link_with : jsoncpp_lib_secure,
+  dependencies : benchmark_dep,
+  install : false,
+  cpp_args : [
+    '-DJSONCPP_USING_SECURE_MEMORY_OVERRIDE=1'
+  ]
+)
+
+g_benchmark = executable(
+  'google_benchmark', files([
+    'src/google_benchmark/main.cpp'
+  ]),
+  include_directories : jsoncpp_include_directories,
+  link_with : jsoncpp_lib,
+  dependencies : benchmark_dep,
+  install : false,
+)
+
+g_benchmark_args = [
+  '--benchmark_out=results.txt',
+  '--benchmark_out_format=console',
+  '--benchmark_repetitions=5'
+]
+
+g_benchmark_workdir = join_paths(meson.current_source_dir(), 'test/benchmark_data')
+
+benchmark(
+  'benchmark',
+  g_benchmark,
+  args : g_benchmark_args,
+  workdir : g_benchmark_workdir
+)
+
+benchmark(
+  'benchmark_secure_alloc',
+  g_benchmark_secure,
+  args : g_benchmark_args,
+  workdir : g_benchmark_workdir
+)
