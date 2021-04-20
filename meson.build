@@ -168,7 +168,6 @@ g_benchmark = executable(
 )
 
 g_benchmark_args = [
-  '--benchmark_out=results.txt',
   '--benchmark_out_format=console',
   '--benchmark_repetitions=5'
 ]
@@ -178,13 +177,13 @@ g_benchmark_workdir = join_paths(meson.current_source_dir(), 'test/benchmark_dat
 benchmark(
   'benchmark',
   g_benchmark,
-  args : g_benchmark_args,
+  args : g_benchmark_args + ['--benchmark_out=results.txt'],
   workdir : g_benchmark_workdir
 )
 
 benchmark(
   'benchmark_secure_alloc',
   g_benchmark_secure,
-  args : g_benchmark_args,
+  args : g_benchmark_args + ['--benchmark_out=results_secure.txt'],
   workdir : g_benchmark_workdir
 )
