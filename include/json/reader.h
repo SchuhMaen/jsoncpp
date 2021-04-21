@@ -15,6 +15,7 @@
 #include <istream>
 #include <stack>
 #include <string>
+#include <memory_resource>
 
 // Disable warning C4251: <data member>: <type> needs to have dll-interface to
 // be used by...
@@ -271,6 +272,7 @@ public:
      * \throw std::exception if something goes wrong (e.g. invalid settings)
      */
     virtual CharReader* newCharReader() const = 0;
+    virtual CharReader* newCharReader(const std::pmr::polymorphic_allocator<Value*>& mr) const = 0;
   }; // Factory
 };   // CharReader
 
@@ -335,6 +337,7 @@ public:
   ~CharReaderBuilder() override;
 
   CharReader* newCharReader() const override;
+  CharReader* newCharReader(const std::pmr::polymorphic_allocator<Value*>& mr) const override;
 
   /** \return true if 'settings' are legal and consistent;
    *   otherwise, indicate bad settings via 'invalid'.
@@ -365,6 +368,9 @@ public:
  */
 bool JSON_API parseFromStream(CharReader::Factory const&, IStream&, Value* root,
                               String* errs);
+
+bool JSON_API parseFromStream(CharReader::Factory const& fact, IStream& sin, Value* root,
+                              String* errs, const std::pmr::polymorphic_allocator<Value*>& mr);
 
 /** \brief Read from 'sin' into 'root'.
  *

@@ -1,0 +1,19 @@
+2021-04-20T19:12:34-00:00
+Running X:\dev\bachelor\code\jsoncpp\builddir\google_benchmark_secure.exe
+Run on (8 X 4000 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x4)
+  L1 Instruction 32 KiB (x4)
+  L2 Unified 256 KiB (x4)
+  L3 Unified 8192 KiB (x1)
+--------------------------------------------------------------------------
+Benchmark                                Time             CPU   Iterations
+--------------------------------------------------------------------------
+BM_StreamParse/json.test           4317949 ns      4177807 ns          187
+BM_StreamParse/json.test           4306877 ns      4094251 ns          187
+BM_StreamParse/json.test           4021671 ns      3760027 ns          187
+BM_StreamParse/json.test           3569200 ns      3342246 ns          187
+BM_StreamParse/json.test           3510490 ns      3258690 ns          187
+BM_StreamParse/json.test_mean      3945237 ns      3726604 ns            5
+BM_StreamParse/json.test_median    4021671 ns      3760027 ns            5
+BM_StreamParse/json.test_stddev     389213 ns       420280 ns            5

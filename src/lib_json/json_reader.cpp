@@ -20,6 +20,7 @@
 #include <set>
 #include <sstream>
 #include <utility>
+#include <memory_resource>
 
 #include <cstdio>
 #if __cplusplus >= 201103L
@@ -860,6 +861,7 @@ bool Reader::good() const { return errors_.empty(); }
 class OurFeatures {
 public:
   static OurFeatures all();
+  static OurFeatures fromSettings(const Json::Value& settings);
   bool allowComments_;
   bool allowTrailingCommas_;
   bool strictRoot_;
@@ -870,10 +872,33 @@ public:
   bool rejectDupKeys_;
   bool allowSpecialFloats_;
   bool skipBom_;
+  bool useBuffer_;
   size_t stackLimit_;
 }; // OurFeatures
 
 OurFeatures OurFeatures::all() { return {}; }
+
+OurFeatures OurFeatures::fromSettings(const Json::Value& settings)
+{
+  OurFeatures features = OurFeatures::all();
+  features.allowComments_ = settings["allowComments"].asBool();
+  features.allowTrailingCommas_ = settings["allowTrailingCommas"].asBool();
+  features.strictRoot_ = settings["strictRoot"].asBool();
+  features.allowDroppedNullPlaceholders_ =
+      settings["allowDroppedNullPlaceholders"].asBool();
+  features.allowNumericKeys_ = settings["allowNumericKeys"].asBool();
+  features.allowSingleQuotes_ = settings["allowSingleQuotes"].asBool();
+
+  // Stack limit is always a size_t, so we get this as an unsigned int
+  // regardless of it we have 64-bit integer support enabled.
+  features.stackLimit_ = static_cast<size_t>(settings["stackLimit"].asUInt());
+  features.failIfExtra_ = settings["failIfExtra"].asBool();
+  features.rejectDupKeys_ = settings["rejectDupKeys"].asBool();
+  features.allowSpecialFloats_ = settings["allowSpecialFloats"].asBool();
+  features.skipBom_ = settings["skipBom"].asBool();
+  features.useBuffer_ = settings["useBuffer"].asBool();
+  return features;
+}
 
 // Implementation of class Reader
 // ////////////////////////////////
@@ -891,14 +916,16 @@ public:
   };
 
   explicit OurReader(OurFeatures const& features);
+  explicit OurReader(OurFeatures const& features, const std::pmr::polymorphic_allocator<Value*>& mr);
   bool parse(const char* beginDoc, const char* endDoc, Value& root,
              bool collectComments = true);
   String getFormattedErrorMessages() const;
   std::vector<StructuredError> getStructuredErrors() const;
 
+  OurReader(OurReader const&) = delete;
+  void operator=(OurReader const&) = delete;
+
 private:
-  OurReader(OurReader const&);      // no impl
-  void operator=(OurReader const&); // no impl
 
   enum TokenType {
     tokenEndOfStream = 0,
@@ -975,7 +1002,7 @@ private:
   static String normalizeEOL(Location begin, Location end);
   static bool containsNewLine(Location begin, Location end);
 
-  using Nodes = std::stack<Value*>;
+  using Nodes = std::stack<Value*,std::pmr::deque<Value*>>;
 
   Nodes nodes_{};
   Errors errors_{};
@@ -999,7 +1026,13 @@ bool OurReader::containsNewLine(OurReader::Location begin,
   return std::any_of(begin, end, [](char b) { return b == '\n' || b == '\r'; });
 }
 
-OurReader::OurReader(OurFeatures const& features) : features_(features) {}
+OurReader::OurReader(OurFeatures const& features) : features_(features)
+{
+}
+
+OurReader::OurReader(OurFeatures const& features, const std::pmr::polymorphic_allocator<Value*>& mr) : features_(features), nodes_(mr)
+{
+}
 
 bool OurReader::parse(const char* beginDoc, const char* endDoc, Value& root,
                       bool collectComments) {
@@ -1413,6 +1446,7 @@ bool OurReader::readNumber(bool checkInf) {
   }
   return true;
 }
+
 bool OurReader::readString() {
   Char c = 0;
   while (current_ != end_) {
@@ -1868,6 +1902,10 @@ class OurCharReader : public CharReader {
 public:
   OurCharReader(bool collectComments, OurFeatures const& features)
       : collectComments_(collectComments), reader_(features) {}
+
+  OurCharReader(bool collectComments, OurFeatures const& features, const std::pmr::polymorphic_allocator<Value*>& mr)
+      : collectComments_(collectComments), reader_(features, mr) {}
+
   bool parse(char const* beginDoc, char const* endDoc, Value* root,
              String* errs) override {
     bool ok = reader_.parse(beginDoc, endDoc, *root, collectComments_);
@@ -1881,24 +1919,15 @@ public:
 CharReaderBuilder::CharReaderBuilder() { setDefaults(&settings_); }
 CharReaderBuilder::~CharReaderBuilder() = default;
 CharReader* CharReaderBuilder::newCharReader() const {
+  OurFeatures features = OurFeatures::fromSettings(settings_);
   bool collectComments = settings_["collectComments"].asBool();
-  OurFeatures features = OurFeatures::all();
-  features.allowComments_ = settings_["allowComments"].asBool();
-  features.allowTrailingCommas_ = settings_["allowTrailingCommas"].asBool();
-  features.strictRoot_ = settings_["strictRoot"].asBool();
-  features.allowDroppedNullPlaceholders_ =
-      settings_["allowDroppedNullPlaceholders"].asBool();
-  features.allowNumericKeys_ = settings_["allowNumericKeys"].asBool();
-  features.allowSingleQuotes_ = settings_["allowSingleQuotes"].asBool();
-
-  // Stack limit is always a size_t, so we get this as an unsigned int
-  // regardless of it we have 64-bit integer support enabled.
-  features.stackLimit_ = static_cast<size_t>(settings_["stackLimit"].asUInt());
-  features.failIfExtra_ = settings_["failIfExtra"].asBool();
-  features.rejectDupKeys_ = settings_["rejectDupKeys"].asBool();
-  features.allowSpecialFloats_ = settings_["allowSpecialFloats"].asBool();
-  features.skipBom_ = settings_["skipBom"].asBool();
   return new OurCharReader(collectComments, features);
+}
+
+CharReader* CharReaderBuilder::newCharReader(const std::pmr::polymorphic_allocator<Value*>& mr) const {
+  OurFeatures features = OurFeatures::fromSettings(settings_);
+  bool collectComments = settings_["collectComments"].asBool();
+  return new OurCharReader(collectComments, features, mr);
 }
 
 bool CharReaderBuilder::validate(Json::Value* invalid) const {
@@ -1915,6 +1944,7 @@ bool CharReaderBuilder::validate(Json::Value* invalid) const {
       "rejectDupKeys",
       "allowSpecialFloats",
       "skipBom",
+      "useBuffer",
   };
   for (auto si = settings_.begin(); si != settings_.end(); ++si) {
     auto key = si.name();
@@ -1945,6 +1975,7 @@ void CharReaderBuilder::strictMode(Json::Value* settings) {
   (*settings)["rejectDupKeys"] = true;
   (*settings)["allowSpecialFloats"] = false;
   (*settings)["skipBom"] = true;
+  (*settings)["useBuffer"] = false;
   //! [CharReaderBuilderStrictMode]
 }
 // static
@@ -1962,6 +1993,7 @@ void CharReaderBuilder::setDefaults(Json::Value* settings) {
   (*settings)["rejectDupKeys"] = false;
   (*settings)["allowSpecialFloats"] = false;
   (*settings)["skipBom"] = true;
+  (*settings)["useBuffer"] = false;
   //! [CharReaderBuilderDefaults]
 }
 
@@ -1977,6 +2009,18 @@ bool parseFromStream(CharReader::Factory const& fact, IStream& sin, Value* root,
   char const* end = begin + doc.size();
   // Note that we do not actually need a null-terminator.
   CharReaderPtr const reader(fact.newCharReader());
+  return reader->parse(begin, end, root, errs);
+}
+
+bool parseFromStream(CharReader::Factory const& fact, IStream& sin, Value* root,
+                     String* errs, const std::pmr::polymorphic_allocator<Value*>& mr) {
+  OStringStream ssin;
+  ssin << sin.rdbuf();
+  String doc = ssin.str();
+  char const* begin = doc.data();
+  char const* end = begin + doc.size();
+  // Note that we do not actually need a null-terminator.
+  CharReaderPtr const reader(fact.newCharReader(mr));
   return reader->parse(begin, end, root, errs);
 }
 
