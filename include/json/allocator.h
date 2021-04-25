@@ -10,6 +10,8 @@
 #include <cstring>
 
 #include <memory>
+#include <iostream>
+#include <memory_resource>
 
 #pragma pack(push, 8)
 
@@ -86,6 +88,28 @@ bool operator==(const SecureAllocator<T>&, const SecureAllocator<U>&) {
 template <typename T, typename U>
 bool operator!=(const SecureAllocator<T>&, const SecureAllocator<U>&) {
   return false;
+}
+
+inline bool isDefaultResource(std::pmr::memory_resource* mr)
+{
+  return mr->is_equal(*std::pmr::get_default_resource());
+}
+
+template <typename T, typename Alloc, typename... Args>
+T* allocObject(Alloc a, Args&&... args) {
+  std::clog << "manual allocObject, is default: " << isDefaultResource(a.resource()) << std::endl;
+  T* ptr = static_cast<T*>(a.resource()->allocate(sizeof(T), alignof(T)));
+  a.construct(ptr, std::forward<Args>(args)...);
+  return ptr;
+  //return new T(std::forward<Args>(args)..., a);
+}
+
+template <typename T, typename Alloc>
+void deallocObject(Alloc a, T* ptr) {
+  std::clog << "manual deallocObject, is default: " << isDefaultResource(a.resource()) << std::endl;
+  a.destroy(ptr);
+  a.resource()->deallocate(ptr, sizeof(T), alignof(T));
+  //delete ptr;
 }
 
 } // namespace Json

@@ -34,8 +34,8 @@ namespace Json {
  * \deprecated Use CharReader and CharReaderBuilder.
  */
 
-class JSONCPP_DEPRECATED(
-    "Use CharReader and CharReaderBuilder instead.") JSON_API Reader {
+class /*JSONCPP_DEPRECATED(
+    "Use CharReader and CharReaderBuilder instead.")*/ JSON_API Reader {
 public:
   using Char = char;
   using Location = const Char*;
@@ -272,7 +272,7 @@ public:
      * \throw std::exception if something goes wrong (e.g. invalid settings)
      */
     virtual CharReader* newCharReader() const = 0;
-    virtual CharReader* newCharReader(const std::pmr::polymorphic_allocator<Value*>& mr) const = 0;
+    virtual CharReader* newCharReader(std::pmr::memory_resource* mr) const = 0;
   }; // Factory
 };   // CharReader
 
@@ -337,7 +337,7 @@ public:
   ~CharReaderBuilder() override;
 
   CharReader* newCharReader() const override;
-  CharReader* newCharReader(const std::pmr::polymorphic_allocator<Value*>& mr) const override;
+  CharReader* newCharReader(std::pmr::memory_resource* mr) const override;
 
   /** \return true if 'settings' are legal and consistent;
    *   otherwise, indicate bad settings via 'invalid'.
@@ -370,7 +370,7 @@ bool JSON_API parseFromStream(CharReader::Factory const&, IStream&, Value* root,
                               String* errs);
 
 bool JSON_API parseFromStream(CharReader::Factory const& fact, IStream& sin, Value* root,
-                              String* errs, const std::pmr::polymorphic_allocator<Value*>& mr);
+                              String* errs, std::pmr::memory_resource* mr);
 
 /** \brief Read from 'sin' into 'root'.
  *

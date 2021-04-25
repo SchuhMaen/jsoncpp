@@ -340,11 +340,16 @@ bool Value::CZString::isStaticString() const {
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
 
+Value::Value(allocator_type alloc)
+  : Value(nullValue, alloc)
+{}
+
 /*! \internal Default constructor initialization must be equivalent to:
  * memset( this, 0, sizeof(Value) )
  * This optimization is used in ValueInternalMap fast allocator.
  */
-Value::Value(ValueType type) {
+Value::Value(ValueType type, allocator_type alloc) 
+  : allocator_(alloc) {
   static char const emptyString[] = "";
   initBasic(type);
   switch (type) {
@@ -363,7 +368,7 @@ Value::Value(ValueType type) {
     break;
   case arrayValue:
   case objectValue:
-    value_.map_ = new ObjectValues();
+    value_.map_ = allocObject<ObjectValues>(allocator_);
     break;
   case booleanValue:
     value_.bool_ = false;
@@ -373,32 +378,38 @@ Value::Value(ValueType type) {
   }
 }
 
-Value::Value(Int value) {
+Value::Value(Int value, allocator_type alloc)
+  : allocator_(alloc) {
   initBasic(intValue);
   value_.int_ = value;
 }
 
-Value::Value(UInt value) {
+Value::Value(UInt value, allocator_type alloc)
+  : allocator_(alloc) {
   initBasic(uintValue);
   value_.uint_ = value;
 }
 #if defined(JSON_HAS_INT64)
-Value::Value(Int64 value) {
+Value::Value(Int64 value, allocator_type alloc)
+  : allocator_(alloc) {
   initBasic(intValue);
   value_.int_ = value;
 }
-Value::Value(UInt64 value) {
+Value::Value(UInt64 value, allocator_type alloc)
+  : allocator_(alloc) {
   initBasic(uintValue);
   value_.uint_ = value;
 }
 #endif // defined(JSON_HAS_INT64)
 
-Value::Value(double value) {
+Value::Value(double value, allocator_type alloc)
+  : allocator_(alloc) {
   initBasic(realValue);
   value_.real_ = value;
 }
 
-Value::Value(const char* value) {
+Value::Value(const char* value, allocator_type alloc)
+  : allocator_(alloc) {
   initBasic(stringValue, true);
   JSON_ASSERT_MESSAGE(value != nullptr,
                       "Null Value Passed to Value Constructor");
@@ -406,34 +417,46 @@ Value::Value(const char* value) {
       value, static_cast<unsigned>(strlen(value)));
 }
 
-Value::Value(const char* begin, const char* end) {
+Value::Value(const char* begin, const char* end, allocator_type alloc)
+  : allocator_(alloc) {
   initBasic(stringValue, true);
   value_.string_ =
       duplicateAndPrefixStringValue(begin, static_cast<unsigned>(end - begin));
 }
 
-Value::Value(const String& value) {
+Value::Value(const String& value, allocator_type alloc)
+  : allocator_(alloc) {
   initBasic(stringValue, true);
   value_.string_ = duplicateAndPrefixStringValue(
       value.data(), static_cast<unsigned>(value.length()));
 }
 
-Value::Value(const StaticString& value) {
+Value::Value(const StaticString& value, allocator_type alloc)
+  : allocator_(alloc) {
   initBasic(stringValue);
   value_.string_ = const_cast<char*>(value.c_str());
 }
 
-Value::Value(bool value) {
+Value::Value(bool value, allocator_type alloc)
+  : allocator_(alloc) {
   initBasic(booleanValue);
   value_.bool_ = value;
 }
 
-Value::Value(const Value& other) {
+Value::Value(const Value& other, allocator_type alloc)
+  : allocator_(alloc) {
   dupPayload(other);
   dupMeta(other);
 }
 
-Value::Value(Value&& other) noexcept {
+Value::Value(Value&& other, allocator_type alloc) noexcept
+  : allocator_(alloc) {
+  initBasic(nullValue);
+  swap(other);
+}
+
+Value::Value(Value&& other) noexcept 
+  : allocator_(other.allocator_) {
   initBasic(nullValue);
   swap(other);
 }
@@ -444,12 +467,16 @@ Value::~Value() {
 }
 
 Value& Value::operator=(const Value& other) {
+  if( &other == this ) return *this;
   Value(other).swap(*this);
   return *this;
 }
 
 Value& Value::operator=(Value&& other) noexcept {
-  other.swap(*this);
+  if(allocator_ == other.allocator_)
+    other.swap(*this);
+  else
+    operator=(other);
   return *this;
 }
 
@@ -998,7 +1025,7 @@ void Value::dupPayload(const Value& other) {
     break;
   case arrayValue:
   case objectValue:
-    value_.map_ = new ObjectValues(*other.value_.map_);
+    value_.map_ = allocObject<ObjectValues>(allocator_, *other.value_.map_);
     break;
   default:
     JSON_ASSERT_UNREACHABLE;
@@ -1019,7 +1046,7 @@ void Value::releasePayload() {
     break;
   case arrayValue:
   case objectValue:
-    delete value_.map_;
+    deallocObject(allocator_, value_.map_);
     break;
   default:
     JSON_ASSERT_UNREACHABLE;

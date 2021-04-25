@@ -916,7 +916,7 @@ public:
   };
 
   explicit OurReader(OurFeatures const& features);
-  explicit OurReader(OurFeatures const& features, const std::pmr::polymorphic_allocator<Value*>& mr);
+  explicit OurReader(OurFeatures const& features, std::pmr::memory_resource* mr);
   bool parse(const char* beginDoc, const char* endDoc, Value& root,
              bool collectComments = true);
   String getFormattedErrorMessages() const;
@@ -1026,12 +1026,11 @@ bool OurReader::containsNewLine(OurReader::Location begin,
   return std::any_of(begin, end, [](char b) { return b == '\n' || b == '\r'; });
 }
 
-OurReader::OurReader(OurFeatures const& features) : features_(features)
-{
+OurReader::OurReader(OurFeatures const& features) : features_(features) {
 }
 
-OurReader::OurReader(OurFeatures const& features, const std::pmr::polymorphic_allocator<Value*>& mr) : features_(features), nodes_(mr)
-{
+OurReader::OurReader(OurFeatures const& features, std::pmr::memory_resource* mr) 
+  : nodes_(mr), features_(features) {
 }
 
 bool OurReader::parse(const char* beginDoc, const char* endDoc, Value& root,
@@ -1903,7 +1902,7 @@ public:
   OurCharReader(bool collectComments, OurFeatures const& features)
       : collectComments_(collectComments), reader_(features) {}
 
-  OurCharReader(bool collectComments, OurFeatures const& features, const std::pmr::polymorphic_allocator<Value*>& mr)
+  OurCharReader(bool collectComments, OurFeatures const& features, std::pmr::memory_resource* mr)
       : collectComments_(collectComments), reader_(features, mr) {}
 
   bool parse(char const* beginDoc, char const* endDoc, Value* root,
@@ -1924,7 +1923,7 @@ CharReader* CharReaderBuilder::newCharReader() const {
   return new OurCharReader(collectComments, features);
 }
 
-CharReader* CharReaderBuilder::newCharReader(const std::pmr::polymorphic_allocator<Value*>& mr) const {
+CharReader* CharReaderBuilder::newCharReader(std::pmr::memory_resource* mr) const {
   OurFeatures features = OurFeatures::fromSettings(settings_);
   bool collectComments = settings_["collectComments"].asBool();
   return new OurCharReader(collectComments, features, mr);
@@ -2013,7 +2012,7 @@ bool parseFromStream(CharReader::Factory const& fact, IStream& sin, Value* root,
 }
 
 bool parseFromStream(CharReader::Factory const& fact, IStream& sin, Value* root,
-                     String* errs, const std::pmr::polymorphic_allocator<Value*>& mr) {
+                     String* errs, std::pmr::memory_resource* mr) {
   OStringStream ssin;
   ssin << sin.rdbuf();
   String doc = ssin.str();

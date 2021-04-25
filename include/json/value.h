@@ -45,6 +45,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <memory_resource>
 
 // Disable warning C4251: <data member>: <type> needs to have dll-interface to
 // be used by...
@@ -206,6 +207,7 @@ public:
   using LargestInt = Json::LargestInt;
   using LargestUInt = Json::LargestUInt;
   using ArrayIndex = Json::ArrayIndex;
+  using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
 
   // Required for boost integration, e. g. BOOST_TEST
   using value_type = std::string;
@@ -292,7 +294,7 @@ private:
   };
 
 public:
-  typedef std::map<CZString, Value> ObjectValues;
+  typedef std::pmr::map<CZString, Value> ObjectValues;
 #endif // ifndef JSONCPP_DOC_EXCLUDE_IMPLEMENTATION
 
 public:
@@ -312,16 +314,17 @@ public:
    *   Json::Value obj_value(Json::objectValue); // {}
    *   \endcode
    */
-  Value(ValueType type = nullValue);
-  Value(Int value);
-  Value(UInt value);
+  Value(allocator_type alloc = {});
+  Value(ValueType type, allocator_type alloc = {});
+  Value(Int value, allocator_type alloc = {});
+  Value(UInt value, allocator_type alloc = {});
 #if defined(JSON_HAS_INT64)
-  Value(Int64 value);
-  Value(UInt64 value);
+  Value(Int64 value, allocator_type alloc = {});
+  Value(UInt64 value, allocator_type alloc = {});
 #endif // if defined(JSON_HAS_INT64)
-  Value(double value);
-  Value(const char* value); ///< Copy til first 0. (NULL causes to seg-fault.)
-  Value(const char* begin, const char* end); ///< Copy all, incl zeroes.
+  Value(double value, allocator_type alloc = {});
+  Value(const char* value, allocator_type alloc = {}); ///< Copy til first 0. (NULL causes to seg-fault.)
+  Value(const char* begin, const char* end, allocator_type alloc = {}); ///< Copy all, incl zeroes.
   /**
    * \brief Constructs a value from a static string.
    *
@@ -339,11 +342,14 @@ public:
    *   Json::Value aValue(foo);
    *   \endcode
    */
-  Value(const StaticString& value);
-  Value(const String& value);
-  Value(bool value);
-  Value(std::nullptr_t ptr) = delete;
-  Value(const Value& other);
+  Value(const StaticString& value, allocator_type alloc = {});
+  Value(const String& value, allocator_type alloc = {});
+  Value(bool value, allocator_type alloc = {});
+
+  Value(std::nullptr_t ptr, allocator_type alloc = {}) = delete;
+
+  Value(const Value& other, allocator_type alloc = {});
+  Value(Value&& other, allocator_type alloc) noexcept;
   Value(Value&& other) noexcept;
   ~Value();
 
@@ -652,6 +658,8 @@ private:
   // was extracted.
   ptrdiff_t start_;
   ptrdiff_t limit_;
+  
+  allocator_type allocator_;
 };
 
 template <> inline bool Value::as<bool>() const { return asBool(); }

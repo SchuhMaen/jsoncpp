@@ -1,3 +1,13 @@
 {
-    "name" : "dd"
+    "short_string": "short",
+    "long_string": "This is a pretty long string, but I don't want to type this out so I will just copy this. This is a pretty long string, but I don't want to type this out so I will just copy this. This is a pretty long string, but I don't want to type this out so I will just copy this. This is a pretty long string, but I don't want to type this out so I will just copy this. This is a pretty long string, but I don't want to type this out so I will just copy this.",
+    "integer": 42,
+    "float": 42.3,
+    "array":
+        [
+            1,
+            2,
+            3,
+            4
+        ]
 }

@@ -106,7 +106,9 @@ jsoncpp_test = executable(
   include_directories : jsoncpp_include_directories,
   link_with : jsoncpp_lib,
   install : false,
-  cpp_args: dll_import_flag)
+  cpp_args: dll_import_flag
+)
+
 test(
   'unittest_jsoncpp_test',
   jsoncpp_test)
@@ -117,7 +119,9 @@ jsontestrunner = executable(
   include_directories : jsoncpp_include_directories,
   link_with : jsoncpp_lib,
   install : false,
-  cpp_args: dll_import_flag)
+  cpp_args: dll_import_flag
+)
+
 test(
   'unittest_jsontestrunner',
   python,
@@ -126,6 +130,7 @@ test(
     jsontestrunner,
     join_paths(meson.current_source_dir(), 'test/data')],
   )
+
 test(
   'jsonchecker_jsontestrunner',
   python,
@@ -136,12 +141,13 @@ test(
     jsontestrunner,
     join_paths(meson.current_source_dir(), 'test/data')],
     workdir : join_paths(meson.current_source_dir(), 'test/data'),
-  )
+)
 
 benchmark_dep = [
   meson.get_compiler('cpp').find_library('benchmark'),
   dependency('threads'),
-  meson.get_compiler('cpp').find_library('shlwapi')
+  meson.get_compiler('cpp').find_library('shlwapi'),
+  meson.get_compiler('cpp').find_library('mr'),
   ]
 
 g_benchmark_secure = executable(
@@ -186,4 +192,15 @@ benchmark(
   g_benchmark_secure,
   args : g_benchmark_args + ['--benchmark_out=results_secure.txt'],
   workdir : g_benchmark_workdir
+)
+
+example = executable(
+  'example', files([
+    'example/readFromString/readFromString.cpp',
+  ]),
+  include_directories : jsoncpp_include_directories,
+  link_with : jsoncpp_lib,
+  dependencies : meson.get_compiler('cpp').find_library('mr'),
+  install : false,
+  cpp_args: dll_import_flag
 )
