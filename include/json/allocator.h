@@ -97,7 +97,7 @@ inline bool isDefaultResource(std::pmr::memory_resource* mr)
 
 template <typename T, typename Alloc, typename... Args>
 T* allocObject(Alloc a, Args&&... args) {
-  std::clog << "manual allocObject, is default: " << isDefaultResource(a.resource()) << std::endl;
+  //std::clog << "manual allocObject, is default: " << isDefaultResource(a.resource()) << std::endl;
   T* ptr = static_cast<T*>(a.resource()->allocate(sizeof(T), alignof(T)));
   a.construct(ptr, std::forward<Args>(args)...);
   return ptr;
@@ -106,7 +106,7 @@ T* allocObject(Alloc a, Args&&... args) {
 
 template <typename T, typename Alloc>
 void deallocObject(Alloc a, T* ptr) {
-  std::clog << "manual deallocObject, is default: " << isDefaultResource(a.resource()) << std::endl;
+  //std::clog << "manual deallocObject, is default: " << isDefaultResource(a.resource()) << std::endl;
   a.destroy(ptr);
   a.resource()->deallocate(ptr, sizeof(T), alignof(T));
   //delete ptr;

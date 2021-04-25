@@ -136,6 +136,15 @@ using IStringStream =
 using OStringStream =
     std::basic_ostringstream<String::value_type, String::traits_type,
                              String::allocator_type>;
+
+using PmrString = std::basic_string<char, std::char_traits<char>, std::pmr::polymorphic_allocator<char>>;
+using IPmrStringStream =
+    std::basic_istringstream<PmrString::value_type, PmrString::traits_type,
+                             PmrString::allocator_type>;
+using OPmrStringStream =
+    std::basic_ostringstream<PmrString::value_type, PmrString::traits_type,
+                             PmrString::allocator_type>;
+
 using IStream = std::istream;
 using OStream = std::ostream;
 } // namespace Json

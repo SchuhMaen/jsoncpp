@@ -315,6 +315,7 @@ public:
    *   \endcode
    */
   Value(allocator_type alloc = {});
+  Value(std::pmr::memory_resource* resource); // required because of bool constructor and conversion from &resource to bool
   Value(ValueType type, allocator_type alloc = {});
   Value(Int value, allocator_type alloc = {});
   Value(UInt value, allocator_type alloc = {});
@@ -344,6 +345,7 @@ public:
    */
   Value(const StaticString& value, allocator_type alloc = {});
   Value(const String& value, allocator_type alloc = {});
+  Value(const char* data, std::size_t, allocator_type alloc = {});
   Value(bool value, allocator_type alloc = {});
 
   Value(std::nullptr_t ptr, allocator_type alloc = {}) = delete;
@@ -369,6 +371,7 @@ public:
   void copyPayload(const Value& other);
 
   ValueType type() const;
+  allocator_type allocator() const;
 
   /// Compare payload only, not comments etc.
   bool operator<(const Value& other) const;
@@ -502,6 +505,10 @@ public:
    *   \endcode
    */
   Value& operator[](const StaticString& key);
+
+  const Value& operator[](std::string_view key) const;
+  Value& operator[](std::string_view key);
+
   /// Return the member named key if it exist, defaultValue otherwise.
   /// \note deep copy
   Value get(const char* key, const Value& defaultValue) const;
@@ -559,6 +566,7 @@ public:
   bool isMember(const String& key) const;
   /// Same as isMember(String const& key)const
   bool isMember(const char* begin, const char* end) const;
+  bool isMember(std::string_view key) const;
 
   /// \brief Return a list of the member names.
   ///

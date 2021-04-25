@@ -341,8 +341,10 @@ bool Value::CZString::isStaticString() const {
 // //////////////////////////////////////////////////////////////////
 
 Value::Value(allocator_type alloc)
-  : Value(nullValue, alloc)
-{}
+  : Value(nullValue, alloc) {}
+
+Value::Value(std::pmr::memory_resource* mr)
+  : Value(nullValue, mr) {}
 
 /*! \internal Default constructor initialization must be equivalent to:
  * memset( this, 0, sizeof(Value) )
@@ -418,17 +420,17 @@ Value::Value(const char* value, allocator_type alloc)
 }
 
 Value::Value(const char* begin, const char* end, allocator_type alloc)
-  : allocator_(alloc) {
-  initBasic(stringValue, true);
-  value_.string_ =
-      duplicateAndPrefixStringValue(begin, static_cast<unsigned>(end - begin));
+  : Value(begin, end - begin, alloc) {
 }
 
 Value::Value(const String& value, allocator_type alloc)
+  : Value(value.data(), value.length(), alloc) {
+}
+
+Value::Value(const char* data, std::size_t length, allocator_type alloc)
   : allocator_(alloc) {
   initBasic(stringValue, true);
-  value_.string_ = duplicateAndPrefixStringValue(
-      value.data(), static_cast<unsigned>(value.length()));
+  value_.string_ = duplicateAndPrefixStringValue(data, static_cast<unsigned>(length));
 }
 
 Value::Value(const StaticString& value, allocator_type alloc)
@@ -504,6 +506,10 @@ void Value::copy(const Value& other) {
 
 ValueType Value::type() const {
   return static_cast<ValueType>(bits_.value_type_);
+}
+
+Value::allocator_type Value::allocator() const {
+  return allocator_;
 }
 
 int Value::compare(const Value& other) const {
@@ -1150,6 +1156,17 @@ Value& Value::operator[](const StaticString& key) {
   return resolveReference(key.c_str());
 }
 
+const Value& Value::operator[](std::string_view key) const {
+  Value const* found = find(key.data(), key.data() + key.length());
+  if (!found)
+    return nullSingleton();
+  return *found;
+}
+
+Value& Value::operator[](std::string_view key) {
+  return resolveReference(key.data(), key.data() + key.length());
+}
+
 Value& Value::append(const Value& value) { return append(Value(value)); }
 
 Value& Value::append(Value&& value) {
@@ -1255,6 +1272,9 @@ bool Value::isMember(char const* key) const {
 }
 bool Value::isMember(String const& key) const {
   return isMember(key.data(), key.data() + key.length());
+}
+bool Value::isMember(std::string_view key) const {
+  return isMember(key.begin(), key.end());
 }
 
 Value::Members Value::getMemberNames() const {
