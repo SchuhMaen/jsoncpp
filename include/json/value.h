@@ -207,7 +207,7 @@ public:
   using LargestInt = Json::LargestInt;
   using LargestUInt = Json::LargestUInt;
   using ArrayIndex = Json::ArrayIndex;
-  using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
+  using allocator_type = std::pmr::polymorphic_allocator<char>;
 
   // Required for boost integration, e. g. BOOST_TEST
   using value_type = std::string;

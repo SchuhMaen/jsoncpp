@@ -70,17 +70,19 @@ static void BM_StringParse(benchmark::State& state)
 {
   const std::string rawJson = R"({"Age": 20, "Name": "colin"})";
   const auto rawJsonLength = static_cast<int>(rawJson.length());
+  Json::CharReaderBuilder builder;
+
   std::array<std::byte, 32000> buffer{};
+  std::array<std::byte, 32000> buffer2{};
 
   for (auto _ : state)
   {
     std::pmr::monotonic_buffer_resource mr{buffer.data(), buffer.size()};
+    std::pmr::monotonic_buffer_resource pr{buffer2.data(), buffer2.size()};
     JSONCPP_STRING err;
     Json::Value root{&mr};
-    Json::CharReaderBuilder builder;
-    //log_resource lr{&mr};
-    const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
 
+    const std::unique_ptr<Json::CharReader> reader(builder.newCharReader(&pr));
     if (!reader->parse(rawJson.c_str(), rawJson.c_str() + rawJsonLength, &root, &err)) {
       state.SkipWithError("failed to parse");
       break;

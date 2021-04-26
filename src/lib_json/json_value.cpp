@@ -112,17 +112,26 @@ static inline bool InRange(double d, T min, U max) {
  *               computed using strlen(value).
  * @return Pointer on the duplicate instance of string.
  */
-static inline char* duplicateStringValue(const char* value, size_t length) {
+static inline char* duplicateStringValue(const char* value, 
+                                          size_t length,
+                                          Json::Value::allocator_type alloc) {
   // Avoid an integer overflow in the call to malloc below by limiting length
   // to a sane value.
   if (length >= static_cast<size_t>(Value::maxInt))
     length = Value::maxInt - 1;
 
-  auto newString = static_cast<char*>(malloc(length + 1));
-  if (newString == nullptr) {
-    throwRuntimeError("in Json::Value::duplicateStringValue(): "
-                      "Failed to allocate string value buffer");
+  char* newString = nullptr;
+  try{
+    newString = static_cast<char*>(alloc.allocate(length + 1));
+    if (newString == nullptr) {
+      throwRuntimeError("in Json::Value::duplicateStringValue(): "
+                        "Failed to allocate string value buffer");
+    }
+  }catch(const std::bad_alloc& e){
+    throwRuntimeError("in Json::Value::duplicateAndPrefixStringValue(): "
+                            "Failed to allocate string value buffer");
   }
+  
   memcpy(newString, value, length);
   newString[length] = 0;
   return newString;
@@ -131,7 +140,8 @@ static inline char* duplicateStringValue(const char* value, size_t length) {
 /* Record the length as a prefix.
  */
 static inline char* duplicateAndPrefixStringValue(const char* value,
-                                                  unsigned int length) {
+                                                  unsigned int length,
+                                                  Json::Value::allocator_type alloc) {
   // Avoid an integer overflow in the call to malloc below by limiting length
   // to a sane value.
   JSON_ASSERT_MESSAGE(length <= static_cast<unsigned>(Value::maxInt) -
@@ -139,11 +149,18 @@ static inline char* duplicateAndPrefixStringValue(const char* value,
                       "in Json::Value::duplicateAndPrefixStringValue(): "
                       "length too big for prefixing");
   size_t actualLength = sizeof(length) + length + 1;
-  auto newString = static_cast<char*>(malloc(actualLength));
-  if (newString == nullptr) {
+  char* newString = nullptr;
+  try{
+    newString = static_cast<char*>(alloc.allocate(actualLength));
+    if (newString == nullptr) {
+      throwRuntimeError("in Json::Value::duplicateAndPrefixStringValue(): "
+                        "Failed to allocate string value buffer");
+    }
+  }catch (const std::bad_alloc& e){
     throwRuntimeError("in Json::Value::duplicateAndPrefixStringValue(): "
-                      "Failed to allocate string value buffer");
+                            "Failed to allocate string value buffer");
   }
+  
   *reinterpret_cast<unsigned*>(newString) = length;
   memcpy(newString + sizeof(unsigned), value, length);
   newString[actualLength - 1U] =
@@ -164,23 +181,31 @@ inline static void decodePrefixedString(bool isPrefixed, char const* prefixed,
  * duplicateStringValue()/duplicateAndPrefixStringValue().
  */
 #if JSONCPP_USING_SECURE_MEMORY
-static inline void releasePrefixedStringValue(char* value) {
+static inline void releasePrefixedStringValue(char* value, std::pmr::polymorphic_allocator<char> alloc) {
   unsigned length = 0;
   char const* valueDecoded;
   decodePrefixedString(true, value, &length, &valueDecoded);
   size_t const size = sizeof(unsigned) + length + 1U;
   memset(value, 0, size);
-  free(value);
+  alloc.deallocate(value, size);
 }
-static inline void releaseStringValue(char* value, unsigned length) {
+static inline void releaseStringValue(char* value, unsigned length, std::pmr::polymorphic_allocator<char> alloc) {
   // length==0 => we allocated the strings memory
   size_t size = (length == 0) ? strlen(value) : length;
   memset(value, 0, size);
-  free(value);
+  alloc.deallocate(value,length); 
 }
 #else  // !JSONCPP_USING_SECURE_MEMORY
-static inline void releasePrefixedStringValue(char* value) { free(value); }
-static inline void releaseStringValue(char* value, unsigned) { free(value); }
+static inline void releasePrefixedStringValue(char* value, std::pmr::polymorphic_allocator<char> alloc) {
+  unsigned length = 0;
+  char const* valueDecoded;
+  decodePrefixedString(true, value, &length, &valueDecoded);
+  size_t const size = sizeof(unsigned) + length + 1U;
+  alloc.deallocate(value, size); 
+}
+static inline void releaseStringValue(char* value, unsigned length, std::pmr::polymorphic_allocator<char> alloc) { 
+  alloc.deallocate(value, length); 
+}
 #endif // JSONCPP_USING_SECURE_MEMORY
 
 } // namespace Json
@@ -245,7 +270,7 @@ Value::CZString::CZString(char const* str, unsigned length,
 
 Value::CZString::CZString(const CZString& other) {
   cstr_ = (other.storage_.policy_ != noDuplication && other.cstr_ != nullptr
-               ? duplicateStringValue(other.cstr_, other.storage_.length_)
+               ? duplicateStringValue(other.cstr_, other.storage_.length_, std::pmr::get_default_resource())
                : other.cstr_);
   storage_.policy_ =
       static_cast<unsigned>(
@@ -267,7 +292,8 @@ Value::CZString::CZString(CZString&& other) noexcept
 Value::CZString::~CZString() {
   if (cstr_ && storage_.policy_ == duplicate) {
     releaseStringValue(const_cast<char*>(cstr_),
-                       storage_.length_ + 1U); // +1 for null terminating
+                       storage_.length_ + 1U,
+                       std::pmr::get_default_resource()); // +1 for null terminating
                                                // character for sake of
                                                // completeness but not actually
                                                // necessary
@@ -416,7 +442,7 @@ Value::Value(const char* value, allocator_type alloc)
   JSON_ASSERT_MESSAGE(value != nullptr,
                       "Null Value Passed to Value Constructor");
   value_.string_ = duplicateAndPrefixStringValue(
-      value, static_cast<unsigned>(strlen(value)));
+      value, static_cast<unsigned>(strlen(value)), allocator_);
 }
 
 Value::Value(const char* begin, const char* end, allocator_type alloc)
@@ -430,7 +456,7 @@ Value::Value(const String& value, allocator_type alloc)
 Value::Value(const char* data, std::size_t length, allocator_type alloc)
   : allocator_(alloc) {
   initBasic(stringValue, true);
-  value_.string_ = duplicateAndPrefixStringValue(data, static_cast<unsigned>(length));
+  value_.string_ = duplicateAndPrefixStringValue(data, static_cast<unsigned>(length), allocator_);
 }
 
 Value::Value(const StaticString& value, allocator_type alloc)
@@ -1023,7 +1049,7 @@ void Value::dupPayload(const Value& other) {
       char const* str;
       decodePrefixedString(other.isAllocated(), other.value_.string_, &len,
                            &str);
-      value_.string_ = duplicateAndPrefixStringValue(str, len);
+      value_.string_ = duplicateAndPrefixStringValue(str, len, allocator_);
       setIsAllocated(true);
     } else {
       value_.string_ = other.value_.string_;
@@ -1048,7 +1074,7 @@ void Value::releasePayload() {
     break;
   case stringValue:
     if (isAllocated())
-      releasePrefixedStringValue(value_.string_);
+      releasePrefixedStringValue(value_.string_, allocator_);
     break;
   case arrayValue:
   case objectValue:
