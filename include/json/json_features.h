@@ -13,7 +13,7 @@
 #pragma pack(push, 8)
 
 namespace Json {
-
+#if USE_READER
 /** \brief Configuration passed to reader and writer.
  * This configuration object can be used to force the Reader or Writer
  * to behave in a standard conforming way.
@@ -53,7 +53,7 @@ public:
   /// \c true if numeric object key are allowed. Default: \c false.
   bool allowNumericKeys_{false};
 };
-
+#endif
 } // namespace Json
 
 #pragma pack(pop)

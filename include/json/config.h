@@ -124,6 +124,9 @@ using LargestInt = Int64;
 using LargestUInt = UInt64;
 #define JSON_HAS_INT64
 #endif // if defined(JSON_NO_INT64)
+#ifndef USE_READER
+#define USE_READER 1
+#endif 
 
 template <typename T>
 using Allocator =

@@ -27,15 +27,14 @@
 #pragma pack(push, 8)
 
 namespace Json {
-
+#if USE_READER
 /** \brief Unserialize a <a HREF="http://www.json.org">JSON</a> document into a
  * Value.
  *
  * \deprecated Use CharReader and CharReaderBuilder.
  */
-
-class /*JSONCPP_DEPRECATED(
-    "Use CharReader and CharReaderBuilder instead.")*/ JSON_API Reader {
+class /* JSONCPP_DEPRECATED(
+    "Use CharReader and CharReaderBuilder instead.") */ JSON_API Reader {
 public:
   using Char = char;
   using Location = const Char*;
@@ -240,7 +239,7 @@ private:
   Features features_;
   bool collectComments_{};
 }; // Reader
-
+#endif
 /** Interface for reading JSON from a char array.
  */
 class JSON_API CharReader {

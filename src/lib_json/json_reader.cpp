@@ -58,7 +58,7 @@ using CharReaderPtr = std::unique_ptr<CharReader>;
 #else
 using CharReaderPtr = std::auto_ptr<CharReader>;
 #endif
-
+#if USE_READER
 // Implementation of class Features
 // ////////////////////////////////
 
@@ -855,7 +855,7 @@ bool Reader::pushError(const Value& value, const String& message,
 }
 
 bool Reader::good() const { return errors_.empty(); }
-
+#endif
 // Originally copied from the Features class (now deprecated), used internally
 // for features implementation.
 class OurFeatures {
@@ -1537,7 +1537,7 @@ bool OurReader::readObject(Token& token) {
 }
 
 bool OurReader::readArray(Token& token) {
-  Value init(arrayValue);
+  Value init(arrayValue, currentValue().allocator());
   currentValue().swapPayload(init);
   currentValue().setOffsetStart(token.start_ - begin_);
   int index = 0;
@@ -1694,7 +1694,7 @@ bool OurReader::decodeString(Token& token) {
   PmrString decoded_string{allocator_};
   if (!decodeString(token, decoded_string))
     return false;
-  Value decoded(decoded_string.data(), decoded_string.length());
+  Value decoded(decoded_string.data(), decoded_string.length(), currentValue().allocator());
   currentValue().swapPayload(decoded);
   currentValue().setOffsetStart(token.start_ - begin_);
   currentValue().setOffsetLimit(token.end_ - begin_);
@@ -1833,7 +1833,10 @@ bool OurReader::addErrorAndRecover(const String& message, Token& token,
   return recoverFromError(skipUntilToken);
 }
 
-Value& OurReader::currentValue() { return *(nodes_.top()); }
+Value& OurReader::currentValue() {
+   Value& f = *(nodes_.top()); 
+   return f;
+}
 
 OurReader::Char OurReader::getNextChar() {
   if (current_ == end_)

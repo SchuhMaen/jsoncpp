@@ -345,7 +345,7 @@ public:
    */
   Value(const StaticString& value, allocator_type alloc = {});
   Value(const String& value, allocator_type alloc = {});
-  Value(const char* data, std::size_t, allocator_type alloc = {});
+  Value(const char* data, std::size_t size, allocator_type alloc = {});
   Value(bool value, allocator_type alloc = {});
 
   Value(std::nullptr_t ptr, allocator_type alloc = {}) = delete;

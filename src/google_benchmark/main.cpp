@@ -15,18 +15,18 @@ static void BM_StreamParse(benchmark::State& state, const std::string& json_file
   if(!ifs.is_open())
     state.SkipWithError(("failed to open: " + json_file).c_str());
 
+  Json::CharReaderBuilder builder;
   std::array<std::byte, 32000> buffer{};
+  std::array<std::byte, 32000> buffer2{};
 
   for (auto _ : state)
   {
     std::pmr::monotonic_buffer_resource mr{buffer.data(), buffer.size()};
+    std::pmr::monotonic_buffer_resource pr{buffer2.data(), buffer2.size()};
     Json::Value root{&mr};
-    Json::CharReaderBuilder builder;
     JSONCPP_STRING errs;
-    //log_resource lr{&mr};
-    //std::pmr::unsynchronized_pool_resource pr{&mr};
 
-    if (!parseFromStream(builder, ifs, &root, &errs)) {
+    if (!parseFromStream(builder, ifs, &root, &errs, &pr)) {
       state.SkipWithError("failed to parse");
       break;
     }
