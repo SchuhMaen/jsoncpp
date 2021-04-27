@@ -261,10 +261,12 @@ private:
 #ifndef JSONCPP_DOC_EXCLUDE_IMPLEMENTATION
   class CZString {
   public:
+    using allocator_type = Value::allocator_type;
     enum DuplicationPolicy { noDuplication = 0, duplicate, duplicateOnCopy };
-    CZString(ArrayIndex index);
-    CZString(char const* str, unsigned length, DuplicationPolicy allocate);
-    CZString(CZString const& other);
+    CZString(ArrayIndex index, allocator_type alloc = {});
+    CZString(char const* str, unsigned length, DuplicationPolicy allocate, allocator_type alloc = {});
+    CZString(CZString const& other, allocator_type alloc = {});
+    CZString(CZString&& other, allocator_type alloc) noexcept;
     CZString(CZString&& other) noexcept;
     ~CZString();
     CZString& operator=(const CZString& other);
@@ -291,6 +293,7 @@ private:
       ArrayIndex index_;
       StringStorage storage_;
     };
+    allocator_type allocator_;
   };
 
 public:

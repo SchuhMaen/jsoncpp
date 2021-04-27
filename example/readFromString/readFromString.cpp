@@ -1,6 +1,8 @@
 #include "..\..\include\json\json.h"
 #include <iostream>
 #include <mr/log_resource.hpp>
+#include <mr/config.hpp>
+#include <mr/res_printer.hpp>
 #include <memory_resource>
 #include <string>
 
@@ -24,6 +26,7 @@ class ConversionTest
  * 20
  */
 int main() {
+  mr::ls::set_log_stream(std::clog);
   //const std::string rawJson = R"({"Age": 20, "Name": "colin is to short so i will lengthen it.", "Obj": { "f": 3 }, "ar": [2,3]})";
   const std::string rawJson = R"({
     "short_string": "short",
@@ -35,7 +38,8 @@ int main() {
             1,
             2,
             3,
-            4
+            4,
+            5
         ]
   })";
   const auto rawJsonLength = static_cast<int>(rawJson.length());
@@ -43,14 +47,16 @@ int main() {
   JSONCPP_STRING err;
   Json::CharReaderBuilder builder;
 
-  std::array<std::byte, 32000> buffer{};
-  std::array<std::byte, 32000> buffer_parser{};
+  std::array<char, 32000> buffer{};
+  std::array<char, 32000> buffer_parser{};
   
   std::pmr::monotonic_buffer_resource mr{buffer.data(), buffer.size()};
   std::pmr::monotonic_buffer_resource pr{buffer_parser.data(), buffer_parser.size()};
 
   mr::log_resource lr{"value_res", &mr};
   mr::log_resource lf{"parse_res", &pr};
+
+  //std::pmr::set_default_resource(std::pmr::null_memory_resource());
 
   Json::Value root{&lr};
   
@@ -74,5 +80,7 @@ int main() {
   std::cout << array[1] << std::endl;
   std::cout << array[2] << std::endl;
   std::cout << array[3] << std::endl;
+  lr.report();
+  mr::dump(buffer.begin(), buffer.end(), 1800);
   return EXIT_SUCCESS;
 }

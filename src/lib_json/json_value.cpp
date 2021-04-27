@@ -119,7 +119,7 @@ static inline char* duplicateStringValue(const char* value,
   // to a sane value.
   if (length >= static_cast<size_t>(Value::maxInt))
     length = Value::maxInt - 1;
-
+  
   char* newString = nullptr;
   try{
     newString = static_cast<char*>(alloc.allocate(length + 1));
@@ -258,19 +258,21 @@ JSONCPP_NORETURN void throwLogicError(String const& msg) {
 // Notes: policy_ indicates if the string was allocated when
 // a string is stored.
 
-Value::CZString::CZString(ArrayIndex index) : cstr_(nullptr), index_(index) {}
+Value::CZString::CZString(ArrayIndex index, allocator_type alloc) 
+  : cstr_(nullptr), index_(index), allocator_(alloc) {}
 
 Value::CZString::CZString(char const* str, unsigned length,
-                          DuplicationPolicy allocate)
-    : cstr_(str) {
+                          DuplicationPolicy allocate, allocator_type alloc)
+  : cstr_(str), allocator_(alloc) {
   // allocate != duplicate
   storage_.policy_ = allocate & 0x3;
   storage_.length_ = length & 0x3FFFFFFF;
 }
 
-Value::CZString::CZString(const CZString& other) {
+Value::CZString::CZString(const CZString& other, allocator_type alloc)
+  : allocator_(alloc){
   cstr_ = (other.storage_.policy_ != noDuplication && other.cstr_ != nullptr
-               ? duplicateStringValue(other.cstr_, other.storage_.length_, std::pmr::get_default_resource())
+               ? duplicateStringValue(other.cstr_, other.storage_.length_, allocator_)
                : other.cstr_);
   storage_.policy_ =
       static_cast<unsigned>(
@@ -284,8 +286,13 @@ Value::CZString::CZString(const CZString& other) {
   storage_.length_ = other.storage_.length_;
 }
 
+Value::CZString::CZString(CZString&& other, allocator_type alloc) noexcept
+    : cstr_(other.cstr_), index_(other.index_), allocator_(alloc) {
+  other.cstr_ = nullptr;
+}
+
 Value::CZString::CZString(CZString&& other) noexcept
-    : cstr_(other.cstr_), index_(other.index_) {
+    : cstr_(other.cstr_), index_(other.index_), allocator_(other.allocator_) {
   other.cstr_ = nullptr;
 }
 
@@ -293,7 +300,7 @@ Value::CZString::~CZString() {
   if (cstr_ && storage_.policy_ == duplicate) {
     releaseStringValue(const_cast<char*>(cstr_),
                        storage_.length_ + 1U,
-                       std::pmr::get_default_resource()); // +1 for null terminating
+                       allocator_); // +1 for null terminating
                                                // character for sake of
                                                // completeness but not actually
                                                // necessary
@@ -312,9 +319,14 @@ Value::CZString& Value::CZString::operator=(const CZString& other) {
 }
 
 Value::CZString& Value::CZString::operator=(CZString&& other) noexcept {
-  cstr_ = other.cstr_;
-  index_ = other.index_;
-  other.cstr_ = nullptr;
+  if(allocator_ == other.allocator_) {
+    cstr_ = other.cstr_;
+    index_ = other.index_;
+    other.cstr_ = nullptr;
+  } else {
+    operator=(other);
+  }
+    
   return *this;
 }
 
@@ -507,8 +519,8 @@ Value& Value::operator=(Value&& other) noexcept {
     operator=(other);
   return *this;
 }
-
 void Value::swapPayload(Value& other) {
+
   std::swap(bits_, other.bits_);
   std::swap(value_, other.value_);
 }
@@ -966,7 +978,7 @@ void Value::resize(ArrayIndex newSize) {
   JSON_ASSERT_MESSAGE(type() == nullValue || type() == arrayValue,
                       "in Json::Value::resize(): requires arrayValue");
   if (type() == nullValue)
-    *this = Value(arrayValue);
+    *this = Value(arrayValue, allocator_);
   ArrayIndex oldSize = size();
   if (newSize == 0)
     clear();
@@ -986,13 +998,13 @@ Value& Value::operator[](ArrayIndex index) {
       type() == nullValue || type() == arrayValue,
       "in Json::Value::operator[](ArrayIndex): requires arrayValue");
   if (type() == nullValue)
-    *this = Value(arrayValue);
-  CZString key(index);
+    *this = Value(arrayValue, allocator_);
+  CZString key(index, allocator_);
   auto it = value_.map_->lower_bound(key);
   if (it != value_.map_->end() && (*it).first == key)
     return (*it).second;
 
-  ObjectValues::value_type defaultValue(key, nullSingleton());
+  ObjectValues::value_type defaultValue({key, allocator_}, nullSingleton());
   it = value_.map_->insert(it, defaultValue);
   return (*it).second;
 }
@@ -1010,7 +1022,7 @@ const Value& Value::operator[](ArrayIndex index) const {
       "in Json::Value::operator[](ArrayIndex)const: requires arrayValue");
   if (type() == nullValue)
     return nullSingleton();
-  CZString key(index);
+  CZString key(index, allocator_);
   ObjectValues::const_iterator it = value_.map_->find(key);
   if (it == value_.map_->end())
     return nullSingleton();
@@ -1099,14 +1111,14 @@ Value& Value::resolveReference(const char* key) {
       type() == nullValue || type() == objectValue,
       "in Json::Value::resolveReference(): requires objectValue");
   if (type() == nullValue)
-    *this = Value(objectValue);
+    *this = Value(objectValue, allocator_);
   CZString actualKey(key, static_cast<unsigned>(strlen(key)),
-                     CZString::noDuplication); // NOTE!
+                     CZString::noDuplication, allocator_); // NOTE!
   auto it = value_.map_->lower_bound(actualKey);
   if (it != value_.map_->end() && (*it).first == actualKey)
     return (*it).second;
 
-  ObjectValues::value_type defaultValue(actualKey, nullSingleton());
+  ObjectValues::value_type defaultValue({actualKey, allocator_}, nullSingleton());
   it = value_.map_->insert(it, defaultValue);
   Value& value = (*it).second;
   return value;
@@ -1118,14 +1130,14 @@ Value& Value::resolveReference(char const* key, char const* end) {
       type() == nullValue || type() == objectValue,
       "in Json::Value::resolveReference(key, end): requires objectValue");
   if (type() == nullValue)
-    *this = Value(objectValue);
+    *this = Value(objectValue, allocator_);
   CZString actualKey(key, static_cast<unsigned>(end - key),
-                     CZString::duplicateOnCopy);
+                     CZString::duplicateOnCopy, allocator_);
   auto it = value_.map_->lower_bound(actualKey);
   if (it != value_.map_->end() && (*it).first == actualKey)
     return (*it).second;
 
-  ObjectValues::value_type defaultValue(actualKey, nullSingleton());
+  ObjectValues::value_type defaultValue({actualKey, allocator_}, nullSingleton());
   it = value_.map_->insert(it, defaultValue);
   Value& value = (*it).second;
   return value;
@@ -1145,7 +1157,7 @@ Value const* Value::find(char const* begin, char const* end) const {
   if (type() == nullValue)
     return nullptr;
   CZString actualKey(begin, static_cast<unsigned>(end - begin),
-                     CZString::noDuplication);
+                     CZString::noDuplication, allocator_);
   ObjectValues::const_iterator it = value_.map_->find(actualKey);
   if (it == value_.map_->end())
     return nullptr;
@@ -1199,13 +1211,13 @@ Value& Value::append(Value&& value) {
   JSON_ASSERT_MESSAGE(type() == nullValue || type() == arrayValue,
                       "in Json::Value::append: requires arrayValue");
   if (type() == nullValue) {
-    *this = Value(arrayValue);
+    *this = Value(arrayValue, allocator_);
   }
   return this->value_.map_->emplace(size(), std::move(value)).first->second;
 }
 
 bool Value::insert(ArrayIndex index, const Value& newValue) {
-  return insert(index, Value(newValue));
+  return insert(index, Value(newValue, allocator_));
 }
 
 bool Value::insert(ArrayIndex index, Value&& newValue) {
@@ -1239,7 +1251,7 @@ bool Value::removeMember(const char* begin, const char* end, Value* removed) {
     return false;
   }
   CZString actualKey(begin, static_cast<unsigned>(end - begin),
-                     CZString::noDuplication);
+                     CZString::noDuplication, allocator_);
   auto it = value_.map_->find(actualKey);
   if (it == value_.map_->end())
     return false;
@@ -1279,11 +1291,11 @@ bool Value::removeIndex(ArrayIndex index, Value* removed) {
   ArrayIndex oldSize = size();
   // shift left all items left, into the place of the "removed"
   for (ArrayIndex i = index; i < (oldSize - 1); ++i) {
-    CZString keey(i);
+    CZString keey(i, allocator_);
     (*value_.map_)[keey] = (*this)[i + 1];
   }
   // erase the last one ("leftover")
-  CZString keyLast(oldSize - 1);
+  CZString keyLast(oldSize - 1, allocator_);
   auto itLast = value_.map_->find(keyLast);
   value_.map_->erase(itLast);
   return true;
