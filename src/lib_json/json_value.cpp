@@ -508,7 +508,7 @@ Value::~Value() {
 
 Value& Value::operator=(const Value& other) {
   if( &other == this ) return *this;
-  Value(other).swap(*this);
+  Value(other, allocator_).swap(*this);
   return *this;
 }
 
@@ -999,13 +999,13 @@ Value& Value::operator[](ArrayIndex index) {
       "in Json::Value::operator[](ArrayIndex): requires arrayValue");
   if (type() == nullValue)
     *this = Value(arrayValue, allocator_);
-  CZString key(index, allocator_);
+  CZString key(index);
   auto it = value_.map_->lower_bound(key);
   if (it != value_.map_->end() && (*it).first == key)
     return (*it).second;
 
-  ObjectValues::value_type defaultValue({key, allocator_}, nullSingleton());
-  it = value_.map_->insert(it, defaultValue);
+  ObjectValues::value_type defaultValue(std::move(key), nullSingleton());
+  it = value_.map_->insert(it, std::move(defaultValue));
   return (*it).second;
 }
 
@@ -1113,13 +1113,13 @@ Value& Value::resolveReference(const char* key) {
   if (type() == nullValue)
     *this = Value(objectValue, allocator_);
   CZString actualKey(key, static_cast<unsigned>(strlen(key)),
-                     CZString::noDuplication, allocator_); // NOTE!
+                     CZString::noDuplication); // NOTE!
   auto it = value_.map_->lower_bound(actualKey);
   if (it != value_.map_->end() && (*it).first == actualKey)
     return (*it).second;
 
-  ObjectValues::value_type defaultValue({actualKey, allocator_}, nullSingleton());
-  it = value_.map_->insert(it, defaultValue);
+  ObjectValues::value_type defaultValue(std::move(actualKey), nullSingleton());
+  it = value_.map_->insert(it, std::move(defaultValue));
   Value& value = (*it).second;
   return value;
 }
@@ -1132,13 +1132,13 @@ Value& Value::resolveReference(char const* key, char const* end) {
   if (type() == nullValue)
     *this = Value(objectValue, allocator_);
   CZString actualKey(key, static_cast<unsigned>(end - key),
-                     CZString::duplicateOnCopy, allocator_);
+                     CZString::duplicateOnCopy);
   auto it = value_.map_->lower_bound(actualKey);
   if (it != value_.map_->end() && (*it).first == actualKey)
     return (*it).second;
 
-  ObjectValues::value_type defaultValue({actualKey, allocator_}, nullSingleton());
-  it = value_.map_->insert(it, defaultValue);
+  ObjectValues::value_type defaultValue(std::move(actualKey), nullSingleton());
+  it = value_.map_->insert(it, std::move(defaultValue));
   Value& value = (*it).second;
   return value;
 }

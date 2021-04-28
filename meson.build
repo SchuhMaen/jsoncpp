@@ -204,3 +204,14 @@ example = executable(
   install : false,
   cpp_args: dll_import_flag
 )
+
+value_tests = executable(
+  'value_tests', files([
+    'example/value_tests.cpp',
+  ]),
+  include_directories : jsoncpp_include_directories,
+  link_with : jsoncpp_lib,
+  dependencies : meson.get_compiler('cpp').find_library('mr'),
+  install : false,
+  cpp_args: dll_import_flag
+)

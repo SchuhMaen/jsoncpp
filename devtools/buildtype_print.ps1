@@ -1,0 +1,1 @@
+meson introspect builddir -i --buildoptions |  Select-String -Pattern buildtype -Context 0,3
