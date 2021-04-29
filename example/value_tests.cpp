@@ -10,19 +10,22 @@
 
 void move_assign_test()
 {
-    const int width = 70;
-    const int length = 70;
+    const int width = 60;
+    const int length = 60;
 
     {   // different resource
         std::array<char, 512> buffer{};
         std::array<char, 512> buffer2{};
         std::array<char, 512> buffer3{};
+
         buffer.fill('~');
         buffer2.fill('~');
         buffer3.fill('~');
+
         std::pmr::monotonic_buffer_resource mr{buffer.data(), buffer.size()};
         std::pmr::monotonic_buffer_resource mr2{buffer2.data(), buffer2.size()};
         std::pmr::monotonic_buffer_resource mr3{buffer3.data(), buffer3.size()};
+
         mr::log_resource lr{"me_res",&mr};
         mr::log_resource lr2{"other_res",&mr2};
         mr::log_resource lr3{"def_res",&mr3};
@@ -32,10 +35,11 @@ void move_assign_test()
         me = Json::Value(Json::arrayValue, &lr2);
 
         lr.report();
-        mr::dump(buffer.begin(), buffer.end(), length, width);
-
         lr2.report();
-        mr::dump(buffer2.begin(), buffer2.end(), length, width);
+
+        mr::dump(buffer.begin(), buffer.end(), length, true, width);
+        mr::dump(buffer2.begin(), buffer2.end(), length, true, width);
+
     }
     {   // same resource
         std::array<char, 512> buffer{};
@@ -100,9 +104,79 @@ void number_test()
     }
 }
 
+void secure_resource_test()
+{
+    const int width = 200;
+    const int length = 1024;
+    const bool p_num = false;
+    constexpr int buffer_size = 1024;
+
+    {   // different resource
+        std::array<char, buffer_size> buffer{};
+        std::array<char, buffer_size> buffer2{};
+        std::array<char, buffer_size> buffer3{};
+
+        buffer.fill('~');
+        buffer2.fill('~');
+        buffer3.fill('~');
+
+        auto buffer_dump = [&]()
+        {
+            mr::dump(buffer.begin(), buffer.end(), length, p_num, width);
+            mr::dump(buffer2.begin(), buffer2.end(), length, p_num, width);
+            mr::dump(buffer3.begin(), buffer3.end(), length, p_num, width);
+        };
+
+        {
+            std::pmr::monotonic_buffer_resource mr{buffer.data(), buffer.size()};
+            std::pmr::monotonic_buffer_resource mr2{buffer2.data(), buffer2.size()};
+            std::pmr::monotonic_buffer_resource mr3{buffer3.data(), buffer3.size()};
+            
+            Json::SecureResource sr{&mr};
+            Json::SecureResource sr2{&mr2};
+            Json::SecureResource sr3{&mr3};
+
+            mr::log_resource::options opt{.log = false};
+
+            mr::log_resource lr{opt,"me_res",&sr};
+            mr::log_resource lr2{opt,"other_res",&sr2};
+            mr::log_resource lr3{opt,"def_res",&sr3};
+
+            std::pmr::set_default_resource(&lr3);
+
+            const std::string rawJson = R"({
+                "short_string": "short",
+                "long_string": "This is a pretty long string, but I don't want to type this out so I will just copy this. This is a pretty long string, but I don't want to type this out so I will just copy this. This is a pretty long string, but I don't want to type this out so I will just copy this. This is a pretty long string, but I don't want to type this out so I will just copy this. This is a pretty long string, but I don't want to type this out so I will just copy this.",
+                "integer": 42,
+                "float": 42.3,
+                "array":[1,2,3,4]
+            })";
+            const auto rawJsonLength = static_cast<int>(rawJson.length());
+
+            Json::CharReaderBuilder builder;
+            const std::unique_ptr<Json::CharReader> reader(builder.newCharReader(&lr2));
+
+            JSONCPP_STRING err;
+            Json::Value root{&lr};
+            
+            if (!reader->parse(rawJson.c_str(), rawJson.c_str() + rawJsonLength, &root, &err)) {
+                mr::ls::stream() << err << std::endl;
+            }
+
+            lr.report();
+            lr2.report();
+            lr3.report();
+
+            buffer_dump();
+        }
+        buffer_dump();
+    }
+}
+
 int main()
 {
     mr::ls::set_log_stream(std::clog);
-    TEST(move_assign_test)
+    //TEST(move_assign_test)
     //TEST(number_test)
+    TEST(secure_resource_test)
 }

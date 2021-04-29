@@ -47,7 +47,7 @@ int main() {
   JSONCPP_STRING err;
   Json::CharReaderBuilder builder;
 
-  std::array<char, 32000> buffer{};
+  std::array<char, 100> buffer{};
   buffer.fill('~');
   std::array<char, 32000> buffer_parser{};
   buffer_parser.fill('~');
@@ -58,15 +58,16 @@ int main() {
   std::pmr::monotonic_buffer_resource pr{buffer_parser.data(), buffer_parser.size()};
   std::pmr::monotonic_buffer_resource dr{buffer_def.data(), buffer_def.size()};
 
-  mr::log_resource lr{"value_res", &mr};
-  mr::log_resource lf{"parse_res", &pr};
-  mr::log_resource ld{"def_res", &dr};
+  mr::log_resource::options opt{.log = false};
 
-  std::pmr::set_default_resource(&ld);
+  mr::log_resource lr{opt, "value_res", &mr};
+  mr::log_resource lf{"parse_res", &pr};
+  mr::log_resource ld{opt, "def_res", &dr};
 
   Json::Value root{&lr};
   
   const std::unique_ptr<Json::CharReader> reader(builder.newCharReader(&lf));
+  std::pmr::set_default_resource(&ld);
   if (!reader->parse(rawJson.c_str(), rawJson.c_str() + rawJsonLength, &root,
                       &err)) {
     std::cout << err << std::endl;
@@ -80,15 +81,16 @@ int main() {
   const int integer = root["integer"].asInt();
   std::cout << integer << std::endl;
   const float floating = root["float"].asFloat();
-  std::cout << floating << std::endl;*/
+  std::cout << floating << std::endl;
   const Json::Value& array = root["array"];
   std::cout << array[0] << std::endl;
   std::cout << array[1] << std::endl;
   std::cout << array[2] << std::endl;
-  std::cout << array[3] << std::endl;
-  lr.report();
-  mr::dump(buffer.begin(), buffer.end(), 1000);
-  ld.report();
-  mr::dump(buffer_def.begin(), buffer_def.end(), 1000);
+  std::cout << array[3] << std::endl;*/
+  //lr.report();
+  //mr::dump(buffer.begin(), buffer.end(), 1000);
+  //ld.report();
+  //mr::dump(buffer_def.begin(), buffer_def.end(), 1000);
+  mr.release();
   return EXIT_SUCCESS;
 }

@@ -16,13 +16,17 @@ static void BM_StreamParse(benchmark::State& state, const std::string& json_file
     state.SkipWithError(("failed to open: " + json_file).c_str());
 
   Json::CharReaderBuilder builder;
-  std::array<std::byte, 32000> buffer{};
+  std::array<std::byte, 128000> buffer{};
   std::array<std::byte, 32000> buffer2{};
+
+  std::pmr::monotonic_buffer_resource mr{buffer.data(), buffer.size()};
+  std::pmr::monotonic_buffer_resource pr{buffer2.data(), buffer2.size()};
 
   for (auto _ : state)
   {
-    std::pmr::monotonic_buffer_resource mr{buffer.data(), buffer.size()};
-    std::pmr::monotonic_buffer_resource pr{buffer2.data(), buffer2.size()};
+    mr.release();
+    pr.release();
+
     Json::Value root{&mr};
     JSONCPP_STRING errs;
 
@@ -31,7 +35,7 @@ static void BM_StreamParse(benchmark::State& state, const std::string& json_file
       break;
     }
     
-    if(root.size() == 0) state.SkipWithError(("failed to open: " + json_file).c_str());
+    //if(root.size() == 0) state.SkipWithError(("failed to open: " + json_file).c_str());
     ifs.clear();
     ifs.seekg(0, std::ios::beg);
   }
@@ -89,19 +93,23 @@ static void BM_StringParse(benchmark::State& state)
   std::array<std::byte, 32000> buffer{};
   std::array<std::byte, 32000> buffer2{};
 
+  std::pmr::monotonic_buffer_resource mr{buffer.data(), buffer.size()};
+  std::pmr::monotonic_buffer_resource pr{buffer2.data(), buffer2.size()};
+  const std::unique_ptr<Json::CharReader> reader(builder.newCharReader(&pr));
+
   for (auto _ : state)
   {
-    std::pmr::monotonic_buffer_resource mr{buffer.data(), buffer.size()};
-    std::pmr::monotonic_buffer_resource pr{buffer2.data(), buffer2.size()};
     
     JSONCPP_STRING err;
     Json::Value root{&mr};
 
-    const std::unique_ptr<Json::CharReader> reader(builder.newCharReader(&pr));
     if (!reader->parse(rawJson.c_str(), rawJson.c_str() + rawJsonLength, &root, &err)) {
       state.SkipWithError(err.c_str());
       break;
     }
+
+    mr.release();
+    pr.release();
   }
 }
 
@@ -125,14 +133,13 @@ static void BM_StringParseNoPmr(benchmark::State& state)
   })";
   const auto rawJsonLength = static_cast<int>(rawJson.length());
   Json::CharReaderBuilder builder;
+  const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
 
   for (auto _ : state)
   {
     JSONCPP_STRING err;
     Json::Value root;
     
-    const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
-
     if (!reader->parse(rawJson.c_str(), rawJson.c_str() + rawJsonLength, &root, &err)) {
       state.SkipWithError(err.c_str());
       break;

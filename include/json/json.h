@@ -11,5 +11,6 @@
 #include "reader.h"
 #include "value.h"
 #include "writer.h"
+#include "resource.h"
 
 #endif // JSON_JSON_H_INCLUDED

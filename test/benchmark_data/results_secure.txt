@@ -1,4 +1,4 @@
-2021-04-27T19:23:36-00:00
+2021-04-29T21:25:58-00:00
 Running X:\dev\bachelor\code\jsoncpp\builddir\google_benchmark_secure.exe
 Run on (8 X 4000 MHz CPU s)
 CPU Caches:
@@ -9,35 +9,35 @@ CPU Caches:
 ----------------------------------------------------------------------------
 Benchmark                                  Time             CPU   Iterations
 ----------------------------------------------------------------------------
-BM_StreamParse/x.test                1958619 ns      1947464 ns          345
-BM_StreamParse/x.test                1972788 ns      1992754 ns          345
-BM_StreamParse/x.test                1856978 ns      1856884 ns          345
-BM_StreamParse/x.test                1859054 ns      1856884 ns          345
-BM_StreamParse/x.test                1861237 ns      1856884 ns          345
-BM_StreamParse/x.test_mean           1901735 ns      1902174 ns            5
-BM_StreamParse/x.test_median         1861237 ns      1856884 ns            5
-BM_StreamParse/x.test_stddev           58629 ns        64050 ns            5
-BM_StreamParseNoPmr/x.test           2085024 ns      2083333 ns          345
-BM_StreamParseNoPmr/x.test           2057671 ns      2038043 ns          345
-BM_StreamParseNoPmr/x.test           2124691 ns      2128623 ns          345
-BM_StreamParseNoPmr/x.test           2092658 ns      2083333 ns          345
-BM_StreamParseNoPmr/x.test           2079130 ns      2083333 ns          345
-BM_StreamParseNoPmr/x.test_mean      2087835 ns      2083333 ns            5
-BM_StreamParseNoPmr/x.test_median    2085024 ns      2083333 ns            5
-BM_StreamParseNoPmr/x.test_stddev      24368 ns        32025 ns            5
-BM_StringParse                          7131 ns         7115 ns       112000
-BM_StringParse                          6917 ns         6975 ns       112000
-BM_StringParse                          6953 ns         6975 ns       112000
-BM_StringParse                          6946 ns         6975 ns       112000
-BM_StringParse                          6982 ns         6975 ns       112000
-BM_StringParse_mean                     6986 ns         7003 ns            5
-BM_StringParse_median                   6953 ns         6975 ns            5
-BM_StringParse_stddev                   84.4 ns         62.4 ns            5
-BM_StringParseNoPmr                     9662 ns         9835 ns        74667
-BM_StringParseNoPmr                     9534 ns         9417 ns        74667
-BM_StringParseNoPmr                     9557 ns         9626 ns        74667
-BM_StringParseNoPmr                     9708 ns         9626 ns        74667
-BM_StringParseNoPmr                     9621 ns         9626 ns        74667
-BM_StringParseNoPmr_mean                9616 ns         9626 ns            5
-BM_StringParseNoPmr_median              9621 ns         9626 ns            5
-BM_StringParseNoPmr_stddev              72.2 ns          148 ns            5
+BM_StreamParse/x.test                1904442 ns      1902174 ns          345
+BM_StreamParse/x.test                2024655 ns      1992754 ns          345
+BM_StreamParse/x.test                1770380 ns      1766304 ns          345
+BM_StreamParse/x.test                1763283 ns      1766304 ns          345
+BM_StreamParse/x.test                1765835 ns      1766304 ns          345
+BM_StreamParse/x.test_mean           1845719 ns      1838768 ns            5
+BM_StreamParse/x.test_median         1770380 ns      1766304 ns            5
+BM_StreamParse/x.test_stddev          116533 ns       104265 ns            5
+BM_StreamParseNoPmr/x.test           1923707 ns      1902174 ns          345
+BM_StreamParseNoPmr/x.test           1914816 ns      1902174 ns          345
+BM_StreamParseNoPmr/x.test           1938477 ns      1947464 ns          345
+BM_StreamParseNoPmr/x.test           1932223 ns      1947464 ns          345
+BM_StreamParseNoPmr/x.test           1908577 ns      1902174 ns          345
+BM_StreamParseNoPmr/x.test_mean      1923560 ns      1920290 ns            5
+BM_StreamParseNoPmr/x.test_median    1923707 ns      1902174 ns            5
+BM_StreamParseNoPmr/x.test_stddev      12232 ns        24806 ns            5
+BM_StringParse                          5265 ns         5301 ns       112000
+BM_StringParse                          5311 ns         5301 ns       112000
+BM_StringParse                          5280 ns         5162 ns       112000
+BM_StringParse                          5284 ns         5301 ns       112000
+BM_StringParse                          5291 ns         5301 ns       112000
+BM_StringParse_mean                     5286 ns         5273 ns            5
+BM_StringParse_median                   5284 ns         5301 ns            5
+BM_StringParse_stddev                   16.9 ns         62.4 ns            5
+BM_StringParseNoPmr                     7187 ns         7254 ns       112000
+BM_StringParseNoPmr                     7684 ns         7673 ns       112000
+BM_StringParseNoPmr                     7504 ns         7533 ns       112000
+BM_StringParseNoPmr                     7531 ns         7533 ns       112000
+BM_StringParseNoPmr                     7579 ns         7533 ns       112000
+BM_StringParseNoPmr_mean                7497 ns         7506 ns            5
+BM_StringParseNoPmr_median              7531 ns         7533 ns            5
+BM_StringParseNoPmr_stddev               186 ns          153 ns            5

@@ -30,6 +30,7 @@ jsoncpp_headers = files([
   'include/json/value.h',
   'include/json/version.h',
   'include/json/writer.h',
+  'include/json/resource.h',
 ])
 jsoncpp_include_directories = include_directories('include')
 
@@ -56,6 +57,7 @@ jsoncpp_lib = library(
     'src/lib_json/json_reader.cpp',
     'src/lib_json/json_value.cpp',
     'src/lib_json/json_writer.cpp',
+    'src/lib_json/json_resource.cpp',
   ]),
   soversion : 24,
   install : true,
@@ -68,6 +70,7 @@ jsoncpp_lib_secure = library(
     'src/lib_json/json_reader.cpp',
     'src/lib_json/json_value.cpp',
     'src/lib_json/json_writer.cpp',
+    'src/lib_json/json_resource.cpp',
   ]),
   soversion : 24,
   install : true,
@@ -208,6 +211,17 @@ example = executable(
 value_tests = executable(
   'value_tests', files([
     'example/value_tests.cpp',
+  ]),
+  include_directories : jsoncpp_include_directories,
+  link_with : jsoncpp_lib,
+  dependencies : meson.get_compiler('cpp').find_library('mr'),
+  install : false,
+  cpp_args: dll_import_flag
+)
+
+read_from_string = executable(
+  'readFromStream', files([
+    'example/readFromStream/readFromStream.cpp',
   ]),
   include_directories : jsoncpp_include_directories,
   link_with : jsoncpp_lib,

@@ -44,7 +44,7 @@ public:
     // memset_s is used because memset may be optimized away by the compiler
     // memset_s not implemented by gcc. use compiler flag instead.
     #ifdef __STDC_LIB_EXT1__
-      memset(p, n * sizeof(T), 0, n * sizeof(T));
+      memset_s(p, n * sizeof(T), 0, n * sizeof(T));
     #else
       std::memset(p, 0, n * sizeof(T)); // requires -fno-builtin-memset
     #endif

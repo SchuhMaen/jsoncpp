@@ -2011,9 +2011,10 @@ bool parseFromStream(CharReader::Factory const& fact, IStream& sin, Value* root,
 
 bool parseFromStream(CharReader::Factory const& fact, IStream& sin, Value* root,
                      String* errs, std::pmr::memory_resource* mr) {
-  OStringStream ssin;
+  PmrString buffer(mr);
+  OPmrStringStream ssin{buffer};
   ssin << sin.rdbuf();
-  String doc = ssin.str();
+  auto doc = ssin.str();
   char const* begin = doc.data();
   char const* end = begin + doc.size();
   // Note that we do not actually need a null-terminator.
