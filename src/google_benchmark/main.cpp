@@ -6,7 +6,7 @@
 #include <string>
 #include <memory_resource>
 #include <mr/log_resource.hpp>
-
+/*
 static void BM_StreamParse(benchmark::State& state, const std::string& json_file) 
 {
   std::ifstream ifs;
@@ -17,7 +17,7 @@ static void BM_StreamParse(benchmark::State& state, const std::string& json_file
 
   Json::CharReaderBuilder builder;
   std::array<std::byte, 128000> buffer{};
-  std::array<std::byte, 32000> buffer2{};
+  std::array<std::byte, 128000> buffer2{};
 
   std::pmr::monotonic_buffer_resource mr{buffer.data(), buffer.size()};
   std::pmr::monotonic_buffer_resource pr{buffer2.data(), buffer2.size()};
@@ -69,7 +69,7 @@ static void BM_StreamParseNoPmr(benchmark::State& state, const std::string& json
   }
 }
 // Register the function as a benchmark
-BENCHMARK_CAPTURE(BM_StreamParseNoPmr, x.test, std::string("test.json"));
+BENCHMARK_CAPTURE(BM_StreamParseNoPmr, x.test, std::string("test.json"));*/
 
 static void BM_StringParse(benchmark::State& state) 
 {
@@ -84,21 +84,25 @@ static void BM_StringParse(benchmark::State& state)
             1,
             2,
             3,
-            4
+            4.0543
         ]
   })";
   const auto rawJsonLength = static_cast<int>(rawJson.length());
   Json::CharReaderBuilder builder;
 
   std::array<std::byte, 32000> buffer{};
-  std::array<std::byte, 32000> buffer2{};
+  std::array<std::byte, 128000> buffer2{};
 
   std::pmr::monotonic_buffer_resource mr{buffer.data(), buffer.size()};
   std::pmr::monotonic_buffer_resource pr{buffer2.data(), buffer2.size()};
-  const std::unique_ptr<Json::CharReader> reader(builder.newCharReader(&pr));
+
 
   for (auto _ : state)
   {
+    mr.release();
+    pr.release();
+
+    const std::unique_ptr<Json::CharReader> reader(builder.newCharReader(&pr));
     
     JSONCPP_STRING err;
     Json::Value root{&mr};
@@ -107,9 +111,6 @@ static void BM_StringParse(benchmark::State& state)
       state.SkipWithError(err.c_str());
       break;
     }
-
-    mr.release();
-    pr.release();
   }
 }
 
@@ -128,15 +129,17 @@ static void BM_StringParseNoPmr(benchmark::State& state)
             1,
             2,
             3,
-            4
+            4.0543
         ]
   })";
   const auto rawJsonLength = static_cast<int>(rawJson.length());
   Json::CharReaderBuilder builder;
-  const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+  
 
   for (auto _ : state)
   {
+    const std::unique_ptr<Json::CharReader> reader(builder.newCharReader());
+    
     JSONCPP_STRING err;
     Json::Value root;
     

@@ -136,7 +136,9 @@ void secure_resource_test()
             Json::SecureResource sr2{&mr2};
             Json::SecureResource sr3{&mr3};
 
-            mr::log_resource::options opt{.log = false};
+            mr::log_resource::options opt{};
+            opt.log = false;
+            opt.buffer_size = 1024;
 
             mr::log_resource lr{opt,"me_res",&sr};
             mr::log_resource lr2{opt,"other_res",&sr2};
@@ -156,20 +158,38 @@ void secure_resource_test()
             Json::CharReaderBuilder builder;
             const std::unique_ptr<Json::CharReader> reader(builder.newCharReader(&lr2));
 
-            JSONCPP_STRING err;
-            Json::Value root{&lr};
-            
-            if (!reader->parse(rawJson.c_str(), rawJson.c_str() + rawJsonLength, &root, &err)) {
-                mr::ls::stream() << err << std::endl;
+            {
+                JSONCPP_STRING err;
+                Json::Value root{&lr};
+                
+                if (!reader->parse(rawJson.c_str(), rawJson.c_str() + rawJsonLength, &root, &err)) {
+                    mr::ls::stream() << err << std::endl;
+                }
+            }
+            {
+                JSONCPP_STRING err;
+                Json::Value root{&lr};
+                
+                if (!reader->parse(rawJson.c_str(), rawJson.c_str() + rawJsonLength, &root, &err)) {
+                    mr::ls::stream() << err << std::endl;
+                }
+            }
+                        {
+                JSONCPP_STRING err;
+                Json::Value root{&lr};
+                
+                if (!reader->parse(rawJson.c_str(), rawJson.c_str() + rawJsonLength, &root, &err)) {
+                    mr::ls::stream() << err << std::endl;
+                }
             }
 
             lr.report();
             lr2.report();
             lr3.report();
 
-            buffer_dump();
+            //buffer_dump();
         }
-        buffer_dump();
+        //buffer_dump();
     }
 }
 

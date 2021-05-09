@@ -1006,9 +1006,8 @@ private:
 
   using Nodes = std::stack<Value*,std::pmr::deque<Value*>>;
 
-  Nodes nodes_{};
+  Nodes nodes_;
   Errors errors_{};
-  String document_{};
   Location begin_ = nullptr;
   Location end_ = nullptr;
   Location current_ = nullptr;
@@ -1031,7 +1030,8 @@ bool OurReader::containsNewLine(OurReader::Location begin,
 }
 
 OurReader::OurReader(const OurFeatures& features, allocator_type alloc) 
-  : features_(features)
+  : nodes_{alloc}
+  , features_(features)
   , allocator_(alloc) {
 }
 
@@ -1110,37 +1110,37 @@ bool OurReader::readValue() {
     successful = decodeString(token);
     break;
   case tokenTrue: {
-    Value v(true);
+    Value v(true, currentValue().allocator());
     currentValue().swapPayload(v);
     currentValue().setOffsetStart(token.start_ - begin_);
     currentValue().setOffsetLimit(token.end_ - begin_);
   } break;
   case tokenFalse: {
-    Value v(false);
+    Value v(false, currentValue().allocator());
     currentValue().swapPayload(v);
     currentValue().setOffsetStart(token.start_ - begin_);
     currentValue().setOffsetLimit(token.end_ - begin_);
   } break;
   case tokenNull: {
-    Value v;
+    Value v(nullValue, currentValue().allocator());
     currentValue().swapPayload(v);
     currentValue().setOffsetStart(token.start_ - begin_);
     currentValue().setOffsetLimit(token.end_ - begin_);
   } break;
   case tokenNaN: {
-    Value v(std::numeric_limits<double>::quiet_NaN());
+    Value v(std::numeric_limits<double>::quiet_NaN(), currentValue().allocator());
     currentValue().swapPayload(v);
     currentValue().setOffsetStart(token.start_ - begin_);
     currentValue().setOffsetLimit(token.end_ - begin_);
   } break;
   case tokenPosInf: {
-    Value v(std::numeric_limits<double>::infinity());
+    Value v(std::numeric_limits<double>::infinity(), currentValue().allocator());
     currentValue().swapPayload(v);
     currentValue().setOffsetStart(token.start_ - begin_);
     currentValue().setOffsetLimit(token.end_ - begin_);
   } break;
   case tokenNegInf: {
-    Value v(-std::numeric_limits<double>::infinity());
+    Value v(-std::numeric_limits<double>::infinity(), currentValue().allocator());
     currentValue().swapPayload(v);
     currentValue().setOffsetStart(token.start_ - begin_);
     currentValue().setOffsetLimit(token.end_ - begin_);
@@ -1152,7 +1152,7 @@ bool OurReader::readValue() {
       // "Un-read" the current token and mark the current value as a null
       // token.
       current_--;
-      Value v;
+      Value v(nullValue, currentValue().allocator());
       currentValue().swapPayload(v);
       currentValue().setOffsetStart(current_ - begin_ - 1);
       currentValue().setOffsetLimit(current_ - begin_);
@@ -1493,7 +1493,7 @@ bool OurReader::readObject(Token& token) {
       if (!decodeString(tokenName, name))
         return recoverFromError(tokenObjectEnd);
     } else if (tokenName.type_ == tokenNumber && features_.allowNumericKeys_) {
-      Value numberName;
+      Value numberName(allocator_);
       if (!decodeNumber(tokenName, numberName))
         return recoverFromError(tokenObjectEnd);
       name = numberName.asString();
@@ -1579,7 +1579,7 @@ bool OurReader::readArray(Token& token) {
 }
 
 bool OurReader::decodeNumber(Token& token) {
-  Value decoded;
+  Value decoded{currentValue().allocator()};
   if (!decodeNumber(token, decoded))
     return false;
   currentValue().swapPayload(decoded);
@@ -1669,7 +1669,7 @@ bool OurReader::decodeNumber(Token& token, Value& decoded) {
 }
 
 bool OurReader::decodeDouble(Token& token) {
-  Value decoded;
+  Value decoded{currentValue().allocator()};
   if (!decodeDouble(token, decoded))
     return false;
   currentValue().swapPayload(decoded);
@@ -1680,8 +1680,8 @@ bool OurReader::decodeDouble(Token& token) {
 
 bool OurReader::decodeDouble(Token& token, Value& decoded) {
   double value = 0;
-  const String buffer(token.start_, token.end_);
-  IStringStream is(buffer);
+  const PmrString buffer(token.start_, token.end_, allocator_);
+  IPmrStringStream is(buffer);
   if (!(is >> value)) {
     return addError(
         "'" + String(token.start_, token.end_) + "' is not a number.", token);

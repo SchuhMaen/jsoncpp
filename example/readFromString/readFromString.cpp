@@ -42,12 +42,13 @@ int main() {
             5
         ]
   })";
+  //const std::string rawJson = R"({"double":4.032434234})";
   const auto rawJsonLength = static_cast<int>(rawJson.length());
 
   JSONCPP_STRING err;
   Json::CharReaderBuilder builder;
 
-  std::array<char, 100> buffer{};
+  std::array<char, 32000> buffer{};
   buffer.fill('~');
   std::array<char, 32000> buffer_parser{};
   buffer_parser.fill('~');
@@ -58,7 +59,7 @@ int main() {
   std::pmr::monotonic_buffer_resource pr{buffer_parser.data(), buffer_parser.size()};
   std::pmr::monotonic_buffer_resource dr{buffer_def.data(), buffer_def.size()};
 
-  mr::log_resource::options opt{.log = false};
+  mr::log_resource::options opt{.log = true};
 
   mr::log_resource lr{opt, "value_res", &mr};
   mr::log_resource lf{"parse_res", &pr};
@@ -87,10 +88,11 @@ int main() {
   std::cout << array[1] << std::endl;
   std::cout << array[2] << std::endl;
   std::cout << array[3] << std::endl;*/
-  //lr.report();
-  //mr::dump(buffer.begin(), buffer.end(), 1000);
-  //ld.report();
-  //mr::dump(buffer_def.begin(), buffer_def.end(), 1000);
-  mr.release();
+  lr.report();
+  mr::dump(buffer.begin(), buffer.end(), 1000);
+  lf.report();
+  mr::dump(buffer_parser.begin(), buffer_parser.end(), 1000);
+  ld.report();
+  mr::dump(buffer_def.begin(), buffer_def.end(), 1000);
   return EXIT_SUCCESS;
 }
