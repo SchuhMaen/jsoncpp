@@ -6,7 +6,9 @@
 #ifndef JSON_ALLOCATOR_H_INCLUDED
 #define JSON_ALLOCATOR_H_INCLUDED
 
+#define __STDC_WANT_LIB_EXT1__ 1
 #include <cstring>
+
 #include <memory>
 
 #pragma pack(push, 8)
@@ -38,7 +40,12 @@ public:
    */
   void deallocate(pointer p, size_type n) {
     // memset_s is used because memset may be optimized away by the compiler
-    memset_s(p, n * sizeof(T), 0, n * sizeof(T));
+    // memset_s not implemented by gcc. use compiler flag instead.
+    #ifdef __STDC_LIB_EXT1__
+      memset(p, n * sizeof(T), 0, n * sizeof(T));
+    #else
+      std::memset(p, 0, n * sizeof(T)); // requires -fno-builtin-memset
+    #endif
     // free using "global operator delete"
     ::operator delete(p);
   }
