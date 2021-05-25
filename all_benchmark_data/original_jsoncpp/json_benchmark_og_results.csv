@@ -1,0 +1,22 @@
+2021-05-25T13:26:49-00:00
+Running C:\Users\Roman\Desktop\benchmarl_backup\og_jsoncpp\j_benchmark.exe
+Run on (8 X 4000 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x4)
+  L1 Instruction 32 KiB (x4)
+  L2 Unified 256 KiB (x4)
+  L3 Unified 8192 KiB (x1)
+name,iterations,real_time,cpu_time,time_unit,bytes_per_second,items_per_second,label,error_occurred,error_message
+"BM_Json",498,1.44214e+06,1.44327e+06,ns,,,,,
+"BM_Json",498,1.44489e+06,1.44327e+06,ns,,,,,
+"BM_Json",498,1.42496e+06,1.44327e+06,ns,,,,,
+"BM_Json",498,1.50152e+06,1.47465e+06,ns,,,,,
+"BM_Json",498,1.42154e+06,1.4119e+06,ns,,,,,
+"BM_Json",498,1.42622e+06,1.44327e+06,ns,,,,,
+"BM_Json",498,1.46897e+06,1.47465e+06,ns,,,,,
+"BM_Json",498,1.41371e+06,1.4119e+06,ns,,,,,
+"BM_Json",498,1.40197e+06,1.38052e+06,ns,,,,,
+"BM_Json",498,1.40824e+06,1.38052e+06,ns,,,,,
+"BM_Json_mean",10,1.43542e+06,1.43072e+06,ns,,,,,
+"BM_Json_median",10,1.42559e+06,1.44327e+06,ns,,,,,
+"BM_Json_stddev",10,30452,33727.7,ns,,,,,

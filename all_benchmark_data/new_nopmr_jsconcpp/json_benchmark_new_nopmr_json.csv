@@ -1,0 +1,22 @@
+2021-05-25T13:27:29-00:00
+Running C:\Users\Roman\Desktop\benchmarl_backup\new_nopmr_jsconcpp\j_benchmark.exe
+Run on (8 X 4000 MHz CPU s)
+CPU Caches:
+  L1 Data 32 KiB (x4)
+  L1 Instruction 32 KiB (x4)
+  L2 Unified 256 KiB (x4)
+  L3 Unified 8192 KiB (x1)
+name,iterations,real_time,cpu_time,time_unit,bytes_per_second,items_per_second,label,error_occurred,error_message
+"BM_Json",498,1.46758e+06,1.44327e+06,ns,,,,,
+"BM_Json",498,1.44913e+06,1.47465e+06,ns,,,,,
+"BM_Json",498,1.41972e+06,1.4119e+06,ns,,,,,
+"BM_Json",498,1.41551e+06,1.4119e+06,ns,,,,,
+"BM_Json",498,1.39916e+06,1.4119e+06,ns,,,,,
+"BM_Json",498,1.40721e+06,1.4119e+06,ns,,,,,
+"BM_Json",498,1.42625e+06,1.4119e+06,ns,,,,,
+"BM_Json",498,1.42066e+06,1.44327e+06,ns,,,,,
+"BM_Json",498,1.40421e+06,1.38052e+06,ns,,,,,
+"BM_Json",498,1.4173e+06,1.44327e+06,ns,,,,,
+"BM_Json_mean",10,1.42267e+06,1.42445e+06,ns,,,,,
+"BM_Json_median",10,1.41851e+06,1.4119e+06,ns,,,,,
+"BM_Json_stddev",10,20965.6,26458.1,ns,,,,,
