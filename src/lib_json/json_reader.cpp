@@ -1977,15 +1977,15 @@ void CharReaderBuilder::strictMode(Json::Value* settings) {
 // static
 void CharReaderBuilder::setDefaults(Json::Value* settings) {
   //! [CharReaderBuilderDefaults]
-  (*settings)["collectComments"] = true;
-  (*settings)["allowComments"] = true;
-  (*settings)["allowTrailingCommas"] = true;
-  (*settings)["strictRoot"] = false;
+  (*settings)["collectComments"] = false;
+  (*settings)["allowComments"] = false;
+  (*settings)["allowTrailingCommas"] = false;
+  (*settings)["strictRoot"] = true;
   (*settings)["allowDroppedNullPlaceholders"] = false;
   (*settings)["allowNumericKeys"] = false;
   (*settings)["allowSingleQuotes"] = false;
   (*settings)["stackLimit"] = 1000;
-  (*settings)["failIfExtra"] = false;
+  (*settings)["failIfExtra"] = true;
   (*settings)["rejectDupKeys"] = false;
   (*settings)["allowSpecialFloats"] = false;
   (*settings)["skipBom"] = true;
