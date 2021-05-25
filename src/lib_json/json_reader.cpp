@@ -909,7 +909,6 @@ class OurReader {
 public:
   using Char = char;
   using Location = const Char*;
-  using allocator_type = std::pmr::polymorphic_allocator<std::byte>;
 
   struct StructuredError {
     ptrdiff_t offset_start;
@@ -917,7 +916,7 @@ public:
     String message;
   };
 
-  explicit OurReader(const OurFeatures& features, allocator_type alloc = {});
+  explicit OurReader(const OurFeatures& features, std::pmr::memory_resource* mr = std::pmr::get_default_resource());
 
   bool parse(const char* beginDoc, const char* endDoc, Value& root,
              bool collectComments = true);
@@ -1019,7 +1018,7 @@ private:
   OurFeatures const features_;
   bool collectComments_ = false;
 
-  allocator_type allocator_;
+  std::pmr::memory_resource* mr_;
 }; // OurReader
 
 // complete copy of Read impl, for OurReader
@@ -1029,10 +1028,10 @@ bool OurReader::containsNewLine(OurReader::Location begin,
   return std::any_of(begin, end, [](char b) { return b == '\n' || b == '\r'; });
 }
 
-OurReader::OurReader(const OurFeatures& features, allocator_type alloc) 
-  : nodes_{alloc}
+OurReader::OurReader(const OurFeatures& features, std::pmr::memory_resource* mr) 
+  : nodes_{mr}
   , features_(features)
-  , allocator_(alloc) {
+  , mr_(mr) {
 }
 
 bool OurReader::parse(const char* beginDoc, const char* endDoc, Value& root,
@@ -1474,7 +1473,7 @@ bool OurReader::readStringSingleQuote() {
 
 bool OurReader::readObject(Token& token) {
   Token tokenName;
-  PmrString name{allocator_};
+  PmrString name{mr_};
   Value init(objectValue, currentValue().allocator());
   currentValue().swapPayload(init);
   currentValue().setOffsetStart(token.start_ - begin_);
@@ -1493,7 +1492,7 @@ bool OurReader::readObject(Token& token) {
       if (!decodeString(tokenName, name))
         return recoverFromError(tokenObjectEnd);
     } else if (tokenName.type_ == tokenNumber && features_.allowNumericKeys_) {
-      Value numberName(allocator_);
+      Value numberName(mr_);
       if (!decodeNumber(tokenName, numberName))
         return recoverFromError(tokenObjectEnd);
       name = numberName.asString();
@@ -1680,7 +1679,7 @@ bool OurReader::decodeDouble(Token& token) {
 
 bool OurReader::decodeDouble(Token& token, Value& decoded) {
   double value = 0;
-  const PmrString buffer(token.start_, token.end_, allocator_);
+  const PmrString buffer(token.start_, token.end_, mr_);
   IPmrStringStream is(buffer);
   if (!(is >> value)) {
     return addError(
@@ -1691,7 +1690,7 @@ bool OurReader::decodeDouble(Token& token, Value& decoded) {
 }
 
 bool OurReader::decodeString(Token& token) {
-  PmrString decoded_string{allocator_};
+  PmrString decoded_string{mr_};
   if (!decodeString(token, decoded_string))
     return false;
   Value decoded(decoded_string.data(), decoded_string.length(), currentValue().allocator());
@@ -1904,7 +1903,7 @@ class OurCharReader : public CharReader {
   OurReader reader_;
 
 public:
-  OurCharReader(bool collectComments, OurFeatures const& features, std::pmr::polymorphic_allocator<std::byte> alloc = {})
+  OurCharReader(bool collectComments, OurFeatures const& features, std::pmr::memory_resource* alloc = std::pmr::get_default_resource())
       : collectComments_(collectComments)
       , reader_(features, alloc) {}
 
@@ -1921,7 +1920,7 @@ public:
 CharReaderBuilder::CharReaderBuilder() { setDefaults(&settings_); }
 CharReaderBuilder::~CharReaderBuilder() = default;
 
-CharReader* CharReaderBuilder::newCharReader(std::pmr::polymorphic_allocator<std::byte> mr) const {
+CharReader* CharReaderBuilder::newCharReader(std::pmr::memory_resource* mr) const {
   OurFeatures features = OurFeatures::fromSettings(settings_);
   bool collectComments = settings_["collectComments"].asBool();
   return new OurCharReader(collectComments, features, mr);

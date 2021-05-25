@@ -270,7 +270,7 @@ public:
     /** \brief Allocate a CharReader via operator new().
      * \throw std::exception if something goes wrong (e.g. invalid settings)
      */
-    virtual CharReader* newCharReader(std::pmr::polymorphic_allocator<std::byte> mr = {}) const = 0;
+    virtual CharReader* newCharReader(std::pmr::memory_resource* mr = std::pmr::get_default_resource()) const = 0;
   }; // Factory
 };   // CharReader
 
@@ -334,7 +334,7 @@ public:
   CharReaderBuilder();
   ~CharReaderBuilder() override;
 
-  CharReader* newCharReader(std::pmr::polymorphic_allocator<std::byte> mr = {}) const override;
+  CharReader* newCharReader(std::pmr::memory_resource* mr = std::pmr::get_default_resource()) const override;
 
   /** \return true if 'settings' are legal and consistent;
    *   otherwise, indicate bad settings via 'invalid'.
