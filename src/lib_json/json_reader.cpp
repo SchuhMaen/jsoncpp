@@ -1690,7 +1690,7 @@ bool OurReader::decodeDouble(Token& token, Value& decoded) {
 }
 
 bool OurReader::decodeString(Token& token) {
-  PmrString decoded_string{mr_};
+  PmrString decoded_string{currentValue().allocator()};
   if (!decodeString(token, decoded_string))
     return false;
   Value decoded(decoded_string.data(), decoded_string.length(), currentValue().allocator());
